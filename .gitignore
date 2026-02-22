@@ -1,0 +1,16 @@
+# Generated output — run the scripts to reproduce
+caravan_maribyrnong/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# GEE credentials (stored locally by earthengine authenticate)
+.config/earthengine/
+
+# OS
+.DS_Store
+Thumbs.db
