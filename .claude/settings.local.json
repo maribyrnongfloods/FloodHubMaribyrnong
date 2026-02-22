@@ -13,7 +13,12 @@
       "Bash(python -m pytest:*)",
       "Bash(git branch:*)",
       "Bash(git remote set-url:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(pip install:*)",
+      "Bash(python test_run.py:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
