@@ -140,12 +140,12 @@ caravan_maribyrnong/
 │   │   └── aus_vic_230227.csv
 │   └── netcdf/aus_vic/
 │       └── aus_vic_XXXXXX.nc   (one per gauge)
-├── attributes/
+├── attributes/aus_vic/
 │   ├── attributes_other_aus_vic.csv       <- gauge metadata
 │   ├── attributes_caravan_aus_vic.csv     <- climate stats (10 columns)
 │   ├── attributes_hydroatlas_aus_vic.csv  <- HydroATLAS basin attributes (294 columns)
 │   └── hydroatlas_raw_*.json              <- raw GEE responses per gauge
-├── shapefiles/
+├── shapefiles/aus_vic/
 │   ├── aus_vic_catchments.geojson
 │   ├── aus_vic_catchments.shp  (+ .dbf, .shx, .prj)
 │   └── {gauge_id}_catchment.geojson / .shp

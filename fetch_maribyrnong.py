@@ -35,7 +35,7 @@ from gauges_config import GAUGES
 # ── Output paths ──────────────────────────────────────────────────────────────
 OUT_DIR   = Path("caravan_maribyrnong")
 TS_DIR    = OUT_DIR / "timeseries" / "csv" / "aus_vic"
-ATTR_DIR  = OUT_DIR / "attributes"
+ATTR_DIR  = OUT_DIR / "attributes" / "aus_vic"
 
 # ── Hydstra API ───────────────────────────────────────────────────────────────
 HYDSTRA_BASE = "https://data.water.vic.gov.au/cgi/webservice.exe"

@@ -38,7 +38,7 @@ from gauges_config import GAUGES
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 GEE_BASINS = "WWF/HydroSHEDS/v1/Basins/hybas_12"
-OUT_DIR    = Path("caravan_maribyrnong/shapefiles")
+OUT_DIR    = Path("caravan_maribyrnong/shapefiles/aus_vic")
 
 
 # ── GEE helpers ───────────────────────────────────────────────────────────────

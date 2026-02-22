@@ -351,7 +351,7 @@ def write_caravan_attributes(climate_stats: list[dict]) -> None:
     """Write attributes_caravan_aus_vic.csv with climate stats for all gauges."""
     if not climate_stats:
         return
-    attr_path = OUT_DIR / "attributes" / "attributes_caravan_aus_vic.csv"
+    attr_path = OUT_DIR / "attributes" / "aus_vic" / "attributes_caravan_aus_vic.csv"
     attr_path.parent.mkdir(parents=True, exist_ok=True)
     fields = list(climate_stats[0].keys())
     with open(attr_path, "w", newline="") as f:

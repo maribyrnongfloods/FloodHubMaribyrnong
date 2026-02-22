@@ -35,7 +35,7 @@ from gauges_config import GAUGES
 # GEE asset — HydroATLAS BasinATLAS level 12 (finest resolution)
 GEE_ASSET = "WWF/HydroATLAS/v1/Basins/level12"
 
-OUT_PATH  = Path("caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv")
+OUT_PATH  = Path("caravan_maribyrnong/attributes/aus_vic/attributes_hydroatlas_aus_vic.csv")
 
 
 # ── GEE query ─────────────────────────────────────────────────────────────────

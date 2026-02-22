@@ -36,8 +36,8 @@ from gauges_config import GAUGES
 OUT_DIR          = Path("caravan_maribyrnong")
 CSV_DIR          = OUT_DIR / "timeseries" / "csv"    / "aus_vic"
 NETCDF_DIR       = OUT_DIR / "timeseries" / "netcdf" / "aus_vic"
-CARAVAN_ATTR     = OUT_DIR / "attributes" / "attributes_caravan_aus_vic.csv"
-OTHER_ATTR       = OUT_DIR / "attributes" / "attributes_other_aus_vic.csv"
+CARAVAN_ATTR     = OUT_DIR / "attributes" / "aus_vic" / "attributes_caravan_aus_vic.csv"
+OTHER_ATTR       = OUT_DIR / "attributes" / "aus_vic" / "attributes_other_aus_vic.csv"
 
 # ── Variable metadata (units + long names for netCDF attributes) ───────────────
 
