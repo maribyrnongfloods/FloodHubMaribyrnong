@@ -9,7 +9,8 @@
       "WebFetch(domain:www.nature.com)",
       "WebFetch(domain:neuralhydrology.readthedocs.io)",
       "WebFetch(domain:essd.copernicus.org)",
-      "WebFetch(domain:grdc.bafg.de)"
+      "WebFetch(domain:grdc.bafg.de)",
+      "Bash(python -m pytest:*)"
     ]
   }
 }
