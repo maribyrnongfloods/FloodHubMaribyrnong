@@ -10,7 +10,9 @@
       "WebFetch(domain:neuralhydrology.readthedocs.io)",
       "WebFetch(domain:essd.copernicus.org)",
       "WebFetch(domain:grdc.bafg.de)",
-      "Bash(python -m pytest:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote set-url:*)"
     ]
   }
 }
