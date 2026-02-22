@@ -66,6 +66,8 @@ Days below this threshold are absent from the timeseries.
 
 ## Meteorological forcing data
 
+**SILO DataDrill**
+
 Source: SILO DataDrill gridded climate dataset
 <https://www.longpaddock.qld.gov.au/silo/>
 
@@ -77,6 +79,23 @@ Morton potential evapotranspiration, solar radiation, vapour pressure.
 
 Licence: [Creative Commons Attribution 4.0 International (CC BY 4.0)](
 https://creativecommons.org/licenses/by/4.0/)
+
+---
+
+**ERA5-Land (ECMWF)**
+
+Source: ERA5-Land hourly data via Google Earth Engine
+<https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_LAND_HOURLY>
+
+Provider: European Centre for Medium-Range Weather Forecasts (ECMWF).
+
+Variables included: dewpoint temperature, surface net solar radiation,
+surface net thermal radiation, surface pressure, 10-m wind components (U and V),
+snow depth water equivalent, volumetric soil water layers 1–4.
+
+Licence: [Copernicus Climate Change Service (C3S) Licence](
+https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf)
+— permits use for research and education. Attribution required.
 
 ---
 

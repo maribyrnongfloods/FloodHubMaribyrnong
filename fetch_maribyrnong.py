@@ -18,7 +18,9 @@ Output structure:
             aus_vic_230200.csv
             aus_vic_230106.csv
         attributes/
-            attributes_caravan_aus_vic.csv
+            attributes_other_aus_vic.csv   ← gauge metadata (this script)
+            attributes_caravan_aus_vic.csv ← climate stats (fetch_silo_met.py)
+            attributes_hydroatlas_aus_vic.csv ← basin attrs (fetch_hydroatlas.py)
 """
 
 import json
@@ -206,7 +208,7 @@ def deduplicate(rows: list[tuple[str, float]]) -> list[tuple[str, float]]:
 
 # ── Per-gauge processing ──────────────────────────────────────────────────────
 
-def process_gauge(gauge: dict) -> None:
+def process_gauge(gauge: dict) -> dict | None:
     """Fetch, convert, and write timeseries + attributes for one gauge."""
     gid  = gauge["gauge_id"]
     name = gauge["name"]
@@ -247,7 +249,7 @@ def process_gauge(gauge: dict) -> None:
     # ── Write timeseries CSV ──────────────────────────────────────────────────
     ts_path = TS_DIR / f"{gid}.csv"
     with open(ts_path, "w") as f:
-        f.write("date,streamflow_mmd\n")
+        f.write("date,streamflow\n")
         for day_str, mm_day in rows:
             f.write(f"{day_str},{mm_day:.4f}\n")
     print(f"  Timeseries → {ts_path}")
@@ -259,24 +261,19 @@ def process_gauge(gauge: dict) -> None:
     ).days + 1
     missing_frac = round(1.0 - len(rows) / expected_days, 4)
 
+    # attributes_other_aus_vic.csv — gauge metadata (Caravan "other" file)
     return {
         "gauge_id":           gid,
-        "country":            "AUS",
-        "basin_name":         "Maribyrnong",
         "gauge_name":         name,
         "gauge_lat":          gauge["lat"],
         "gauge_lon":          gauge["lon"],
+        "country":            "AUS",
+        "basin_name":         "Maribyrnong",
         "area":               area,
         "unit_area":          "km2",
         "streamflow_period":  period_str,
         "streamflow_missing": missing_frac,
         "streamflow_units":   "mm/d",
-        "p_mean":             "",
-        "pet_mean":           "",
-        "aridity":            "",
-        "frac_snow":          "",
-        "high_prec_freq":     "",
-        "low_prec_freq":      "",
         "source":             f"Melbourne Water (api.melbournewater.com.au), Station {gauge['station_id']}"
                               if gauge["api"] == "melbwater"
                               else f"Victorian Water Monitoring (data.water.vic.gov.au), Station {gauge['station_id']}",
@@ -301,20 +298,21 @@ def main():
             if attr_fields is None:
                 attr_fields = list(result.keys())
 
-    # ── Write combined attributes CSV ─────────────────────────────────────────
+    # ── Write attributes_other CSV (gauge metadata) ───────────────────────────
     if attr_rows:
         import csv
-        attr_path = ATTR_DIR / "attributes_caravan_aus_vic.csv"
+        attr_path = ATTR_DIR / "attributes_other_aus_vic.csv"
         with open(attr_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=attr_fields)
             writer.writeheader()
             writer.writerows(attr_rows)
-        print(f"\nAttributes → {attr_path}  ({len(attr_rows)} gauges)")
+        print(f"\nGauge metadata → {attr_path}  ({len(attr_rows)} gauges)")
 
     print(f"""
 {'═' * 60}
  Done. Next steps:
    python fetch_silo_met.py --username your@email.com
+   python fetch_era5land.py
    python fetch_hydroatlas.py
 {'═' * 60}
 """)

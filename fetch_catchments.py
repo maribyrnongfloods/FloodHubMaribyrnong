@@ -192,17 +192,40 @@ def main():
     fc_path.write_text(json.dumps(fc, indent=2))
 
     gids = [f["properties"]["gauge_id"] for f in all_features]
+
+    # ── Export as ESRI shapefile (required by Caravan) ────────────────────────
+    shp_written = False
+    try:
+        import geopandas as gpd
+        gdf = gpd.read_file(str(fc_path))
+        shp_path = OUT_DIR / "aus_vic_catchments.shp"
+        gdf.to_file(str(shp_path))
+        # Also write individual shapefiles per gauge
+        for g in gids:
+            single = gdf[gdf["gauge_id"] == g]
+            if not single.empty:
+                single.to_file(str(OUT_DIR / f"{g}_catchment.shp"))
+        print(f"\n  Shapefile → {OUT_DIR}/aus_vic_catchments.shp  (+ per-gauge .shp)")
+        shp_written = True
+    except ImportError:
+        print("\n  NOTE: geopandas not installed — ESRI shapefile not written.")
+        print("        Run:  pip install geopandas")
+        print("        Then re-run this script, or convert the GeoJSON manually in QGIS.")
+
     print(f"""
 {'═' * 60}
  Catchment boundaries written ({len(all_features)} gauge(s)):
 
    caravan_maribyrnong/shapefiles/
      aus_vic_catchments.geojson          ← combined FeatureCollection
-""" + "\n".join(f"     {g}_catchment.geojson" for g in gids) + f"""
+""" + "\n".join(f"     {g}_catchment.geojson" for g in gids) + (f"""
+     aus_vic_catchments.shp              ← combined shapefile (Caravan format)
+""" if shp_written else "") + f"""
 
- Next — upload to GEE as an asset:
+ Next — upload shapefile to GEE as an asset:
    1. Go to  https://code.earthengine.google.com/
-   2. Assets tab → NEW → Shape files → upload aus_vic_catchments.geojson
+   2. Assets tab → NEW → Shape files → upload aus_vic_catchments.shp
+      (include the .dbf, .shx, .prj files in the same upload)
    3. Note the asset path (e.g. users/YOUR_NAME/aus_vic_catchments)
    4. Use that asset path in the Caravan ERA5-Land GEE notebooks to
       spatially average forcing data over these catchment polygons.

@@ -16,13 +16,15 @@ Usage:
 
 What it updates (for each gauge):
     caravan_maribyrnong/timeseries/csv/aus_vic/{gauge_id}.csv
-        Adds columns: precipitation_mmd, temperature_2m_max,
+        Adds columns: total_precipitation_sum, temperature_2m_max,
                       temperature_2m_min, temperature_2m_mean,
-                      pet_mmd, radiation_mj_m2_d, vapour_pressure_hpa
+                      potential_evaporation_sum, radiation_mj_m2_d,
+                      vapour_pressure_hpa
 
-    caravan_maribyrnong/attributes/attributes_caravan_aus_vic.csv
-        Fills: p_mean, pet_mean, aridity, frac_snow,
-               high_prec_freq, low_prec_freq
+    caravan_maribyrnong/attributes/attributes_caravan_aus_vic.csv  (created fresh)
+        Writes: p_mean, pet_mean, aridity, frac_snow, moisture_index,
+                moisture_index_seasonality, high_prec_freq, high_prec_dur,
+                low_prec_freq, low_prec_dur
 """
 
 import argparse
@@ -43,7 +45,6 @@ CHUNK_YEARS = 10
 # ── Paths ─────────────────────────────────────────────────────────────────────
 OUT_DIR   = Path("caravan_maribyrnong")
 TS_DIR    = OUT_DIR / "timeseries" / "csv" / "aus_vic"
-ATTR_PATH = OUT_DIR / "attributes" / "attributes_caravan_aus_vic.csv"
 
 
 # ── SILO fetch ────────────────────────────────────────────────────────────────
@@ -217,9 +218,9 @@ def merge_gauge(gauge: dict, silo_rows: list[dict]) -> dict | None:
     with open(ts_path, newline="") as f:
         flow_rows = list(csv.DictReader(f))
 
-    merged     = []
+    merged:    list[dict] = []
+    met_pairs: list[tuple[str, float, float]] = []   # (date, rain, pet)
     rain_vals: list[float] = []
-    pet_vals:  list[float] = []
     matched    = 0
 
     for flow_row in flow_rows:
@@ -238,23 +239,26 @@ def merge_gauge(gauge: dict, silo_rows: list[dict]) -> dict | None:
         vp    = get("vp")
         tmean = round((tmax + tmin) / 2, 3) if tmax is not None and tmin is not None else None
 
+        # Support timeseries files written with either column name
+        sf = flow_row.get("streamflow", flow_row.get("streamflow_mmd", ""))
+
         merged.append({
-            "date":                flow_row["date"],
-            "streamflow_mmd":      flow_row["streamflow_mmd"],
-            "precipitation_mmd":   "" if rain  is None else round(rain,  3),
-            "temperature_2m_max":  "" if tmax  is None else round(tmax,  3),
-            "temperature_2m_min":  "" if tmin  is None else round(tmin,  3),
-            "temperature_2m_mean": "" if tmean is None else tmean,
-            "pet_mmd":             "" if pet   is None else round(pet,   3),
-            "radiation_mj_m2_d":   "" if rad   is None else round(rad,   3),
-            "vapour_pressure_hpa": "" if vp    is None else round(vp,    3),
+            "date":                    d,
+            "streamflow":              sf,
+            "total_precipitation_sum": "" if rain  is None else round(rain,  3),
+            "temperature_2m_max":      "" if tmax  is None else round(tmax,  3),
+            "temperature_2m_min":      "" if tmin  is None else round(tmin,  3),
+            "temperature_2m_mean":     "" if tmean is None else tmean,
+            "potential_evaporation_sum": "" if pet is None else round(pet,   3),
+            "radiation_mj_m2_d":       "" if rad  is None else round(rad,   3),
+            "vapour_pressure_hpa":     "" if vp   is None else round(vp,    3),
         })
         if met:
             matched += 1
         if rain is not None:
             rain_vals.append(rain)
-        if pet is not None:
-            pet_vals.append(pet)
+        if rain is not None and pet is not None:
+            met_pairs.append((d, rain, pet))
 
     print(f"    Rows merged with SILO data: {matched} / {len(flow_rows)}")
 
@@ -264,52 +268,86 @@ def merge_gauge(gauge: dict, silo_rows: list[dict]) -> dict | None:
         writer.writerows(merged)
     print(f"    Timeseries updated → {ts_path}")
 
-    # Compute climate stats
-    if rain_vals and pet_vals:
-        p_mean   = round(sum(rain_vals) / len(rain_vals), 4)
-        pet_mean = round(sum(pet_vals)  / len(pet_vals),  4)
-        aridity  = round(pet_mean / p_mean, 4) if p_mean > 0 else ""
-        n = len(rain_vals)
-        high_prec_freq = round(sum(1 for r in rain_vals if r > 5 * p_mean) / n, 4)
-        low_prec_freq  = round(sum(1 for r in rain_vals if r < 1.0)         / n, 4)
-        print(f"    p_mean={p_mean}  pet_mean={pet_mean}  aridity={aridity}")
-        return {
-            "gauge_id":        gid,
-            "p_mean":          p_mean,
-            "pet_mean":        pet_mean,
-            "aridity":         aridity,
-            "frac_snow":       0.0,
-            "high_prec_freq":  high_prec_freq,
-            "low_prec_freq":   low_prec_freq,
-        }
-    return None
+    # ── Compute climate stats ─────────────────────────────────────────────────
+    if not met_pairs:
+        return None
+
+    pair_rain = [r for _, r, _ in met_pairs]
+    pair_pet  = [e for _, _, e in met_pairs]
+    n         = len(met_pairs)
+
+    p_mean   = round(sum(pair_rain) / n, 4)
+    pet_mean = round(sum(pair_pet)  / n, 4)
+    aridity  = round(pet_mean / p_mean, 4) if p_mean > 0 else ""
+
+    # Moisture index: (PET − P) / (PET + P), averaged daily
+    mi_daily = [
+        (e - r) / (e + r) if (e + r) > 0 else 0.0
+        for r, e in zip(pair_rain, pair_pet)
+    ]
+    moisture_index = round(sum(mi_daily) / n, 4)
+
+    # Moisture index seasonality: range of monthly mean MI values
+    from collections import defaultdict
+    monthly_mi: dict[str, list[float]] = defaultdict(list)
+    for (d, r, e), mi in zip(met_pairs, mi_daily):
+        monthly_mi[d[5:7]].append(mi)          # key = "MM"
+    monthly_means = [sum(v) / len(v) for v in monthly_mi.values() if v]
+    moisture_index_seasonality = (
+        round(max(monthly_means) - min(monthly_means), 4)
+        if len(monthly_means) >= 2 else 0.0
+    )
+
+    # Precipitation frequency stats (use all days with rain data)
+    high_prec_freq = round(sum(1 for r in rain_vals if r > 5 * p_mean) / len(rain_vals), 4)
+    low_prec_freq  = round(sum(1 for r in rain_vals if r < 1.0)         / len(rain_vals), 4)
+
+    # Mean consecutive-day run lengths
+    def mean_run_length(vals: list[float], condition) -> float:
+        runs, curr = [], 0
+        for v in vals:
+            if condition(v):
+                curr += 1
+            elif curr > 0:
+                runs.append(curr)
+                curr = 0
+        if curr > 0:
+            runs.append(curr)
+        return round(sum(runs) / len(runs), 4) if runs else 0.0
+
+    high_prec_dur = mean_run_length(rain_vals, lambda r: r > 5 * p_mean)
+    low_prec_dur  = mean_run_length(rain_vals, lambda r: r < 1.0)
+
+    print(f"    p_mean={p_mean}  pet_mean={pet_mean}  aridity={aridity}  "
+          f"moisture_index={moisture_index}")
+
+    return {
+        "gauge_id":                    gid,
+        "p_mean":                      p_mean,
+        "pet_mean":                    pet_mean,
+        "aridity":                     aridity,
+        "frac_snow":                   0.0,
+        "moisture_index":              moisture_index,
+        "moisture_index_seasonality":  moisture_index_seasonality,
+        "high_prec_freq":              high_prec_freq,
+        "high_prec_dur":               high_prec_dur,
+        "low_prec_freq":               low_prec_freq,
+        "low_prec_dur":                low_prec_dur,
+    }
 
 
-def update_attributes(climate_stats: list[dict]) -> None:
-    """Write climate stats back into the shared attributes CSV."""
-    if not ATTR_PATH.exists():
-        print(f"  WARNING: {ATTR_PATH} not found — skipping attribute update.")
+def write_caravan_attributes(climate_stats: list[dict]) -> None:
+    """Write attributes_caravan_aus_vic.csv with climate stats for all gauges."""
+    if not climate_stats:
         return
-
-    with open(ATTR_PATH, newline="") as f:
-        reader    = csv.DictReader(f)
-        attr_rows = list(reader)
-        fields    = reader.fieldnames
-
-    stats_by_id = {s["gauge_id"]: s for s in climate_stats}
-    for row in attr_rows:
-        stats = stats_by_id.get(row.get("gauge_id"))
-        if stats:
-            for k in ("p_mean", "pet_mean", "aridity", "frac_snow",
-                      "high_prec_freq", "low_prec_freq"):
-                if k in row:
-                    row[k] = stats[k]
-
-    with open(ATTR_PATH, "w", newline="") as f:
+    attr_path = OUT_DIR / "attributes" / "attributes_caravan_aus_vic.csv"
+    attr_path.parent.mkdir(parents=True, exist_ok=True)
+    fields = list(climate_stats[0].keys())
+    with open(attr_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
-        writer.writerows(attr_rows)
-    print(f"\n  Attributes updated → {ATTR_PATH}")
+        writer.writerows(climate_stats)
+    print(f"\n  Caravan attributes → {attr_path}  ({len(climate_stats)} gauges)")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -350,12 +388,13 @@ def main():
             climate_stats.append(stats)
 
     if climate_stats:
-        update_attributes(climate_stats)
+        write_caravan_attributes(climate_stats)
 
     print(f"""
 {'═' * 60}
  SILO merge complete for {len(climate_stats)} gauge(s).
- Next step:
+ Next steps:
+   python fetch_era5land.py
    python fetch_hydroatlas.py
 {'═' * 60}
 """)

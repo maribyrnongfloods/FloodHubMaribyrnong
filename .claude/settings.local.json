@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:zenodo.org)",
+      "WebFetch(domain:www.nature.com)",
+      "WebFetch(domain:neuralhydrology.readthedocs.io)",
+      "WebFetch(domain:essd.copernicus.org)",
+      "WebFetch(domain:grdc.bafg.de)"
     ]
   }
 }

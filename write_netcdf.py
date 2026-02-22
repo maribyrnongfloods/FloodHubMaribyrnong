@@ -8,6 +8,7 @@ fetch_silo_met.py and writes Caravan-format netCDF4 files, one per gauge.
 Must be run AFTER:
     python fetch_maribyrnong.py
     python fetch_silo_met.py --username your@email.com
+    python fetch_era5land.py
 
 Output structure:
     caravan_maribyrnong/
@@ -32,20 +33,23 @@ from gauges_config import GAUGES
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-OUT_DIR      = Path("caravan_maribyrnong")
-CSV_DIR      = OUT_DIR / "timeseries" / "csv"    / "aus_vic"
-NETCDF_DIR   = OUT_DIR / "timeseries" / "netcdf" / "aus_vic"
-ATTR_PATH    = OUT_DIR / "attributes" / "attributes_caravan_aus_vic.csv"
+OUT_DIR          = Path("caravan_maribyrnong")
+CSV_DIR          = OUT_DIR / "timeseries" / "csv"    / "aus_vic"
+NETCDF_DIR       = OUT_DIR / "timeseries" / "netcdf" / "aus_vic"
+CARAVAN_ATTR     = OUT_DIR / "attributes" / "attributes_caravan_aus_vic.csv"
+OTHER_ATTR       = OUT_DIR / "attributes" / "attributes_other_aus_vic.csv"
 
 # ── Variable metadata (units + long names for netCDF attributes) ───────────────
 
 VAR_META = {
-    "streamflow_mmd": {
+    # ── Streamflow ────────────────────────────────────────────────────────────
+    "streamflow": {
         "units":      "mm/d",
         "long_name":  "Observed daily streamflow (depth over catchment area)",
         "_FillValue": -9999.0,
     },
-    "precipitation_mmd": {
+    # ── SILO DataDrill meteorological forcing ─────────────────────────────────
+    "total_precipitation_sum": {
         "units":      "mm/d",
         "long_name":  "Daily precipitation (SILO DataDrill)",
         "_FillValue": -9999.0,
@@ -65,19 +69,185 @@ VAR_META = {
         "long_name":  "Daily mean 2-m air temperature (SILO DataDrill, average of max+min)",
         "_FillValue": -9999.0,
     },
-    "pet_mmd": {
+    "potential_evaporation_sum": {
         "units":      "mm/d",
-        "long_name":  "Potential evapotranspiration — Morton (SILO DataDrill)",
+        "long_name":  "Potential evapotranspiration — Morton method (SILO DataDrill)",
         "_FillValue": -9999.0,
     },
     "radiation_mj_m2_d": {
         "units":      "MJ/m2/d",
-        "long_name":  "Daily solar radiation (SILO DataDrill)",
+        "long_name":  "Daily incoming solar radiation (SILO DataDrill)",
         "_FillValue": -9999.0,
     },
     "vapour_pressure_hpa": {
         "units":      "hPa",
         "long_name":  "Daily vapour pressure (SILO DataDrill)",
+        "_FillValue": -9999.0,
+    },
+    # ── ERA5-Land forcing (added by fetch_era5land.py) ────────────────────────
+    "dewpoint_temperature_2m_mean": {
+        "units":      "degC",
+        "long_name":  "Daily mean 2-m dewpoint temperature (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "dewpoint_temperature_2m_min": {
+        "units":      "degC",
+        "long_name":  "Daily minimum 2-m dewpoint temperature (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "dewpoint_temperature_2m_max": {
+        "units":      "degC",
+        "long_name":  "Daily maximum 2-m dewpoint temperature (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_net_solar_radiation_mean": {
+        "units":      "W/m2",
+        "long_name":  "Daily mean surface net solar radiation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_net_solar_radiation_min": {
+        "units":      "W/m2",
+        "long_name":  "Daily minimum surface net solar radiation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_net_solar_radiation_max": {
+        "units":      "W/m2",
+        "long_name":  "Daily maximum surface net solar radiation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_net_thermal_radiation_mean": {
+        "units":      "W/m2",
+        "long_name":  "Daily mean surface net thermal radiation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_net_thermal_radiation_min": {
+        "units":      "W/m2",
+        "long_name":  "Daily minimum surface net thermal radiation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_net_thermal_radiation_max": {
+        "units":      "W/m2",
+        "long_name":  "Daily maximum surface net thermal radiation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_pressure_mean": {
+        "units":      "kPa",
+        "long_name":  "Daily mean surface pressure (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_pressure_min": {
+        "units":      "kPa",
+        "long_name":  "Daily minimum surface pressure (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "surface_pressure_max": {
+        "units":      "kPa",
+        "long_name":  "Daily maximum surface pressure (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "u_component_of_wind_10m_mean": {
+        "units":      "m/s",
+        "long_name":  "Daily mean 10-m U-component of wind (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "u_component_of_wind_10m_min": {
+        "units":      "m/s",
+        "long_name":  "Daily minimum 10-m U-component of wind (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "u_component_of_wind_10m_max": {
+        "units":      "m/s",
+        "long_name":  "Daily maximum 10-m U-component of wind (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "v_component_of_wind_10m_mean": {
+        "units":      "m/s",
+        "long_name":  "Daily mean 10-m V-component of wind (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "v_component_of_wind_10m_min": {
+        "units":      "m/s",
+        "long_name":  "Daily minimum 10-m V-component of wind (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "v_component_of_wind_10m_max": {
+        "units":      "m/s",
+        "long_name":  "Daily maximum 10-m V-component of wind (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "snow_depth_water_equivalent_mean": {
+        "units":      "mm",
+        "long_name":  "Daily mean snow depth water equivalent (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "snow_depth_water_equivalent_min": {
+        "units":      "mm",
+        "long_name":  "Daily minimum snow depth water equivalent (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "snow_depth_water_equivalent_max": {
+        "units":      "mm",
+        "long_name":  "Daily maximum snow depth water equivalent (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_1_mean": {
+        "units":      "m3/m3",
+        "long_name":  "Daily mean volumetric soil water layer 1 0-7 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_1_min": {
+        "units":      "m3/m3",
+        "long_name":  "Daily minimum volumetric soil water layer 1 0-7 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_1_max": {
+        "units":      "m3/m3",
+        "long_name":  "Daily maximum volumetric soil water layer 1 0-7 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_2_mean": {
+        "units":      "m3/m3",
+        "long_name":  "Daily mean volumetric soil water layer 2 7-28 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_2_min": {
+        "units":      "m3/m3",
+        "long_name":  "Daily minimum volumetric soil water layer 2 7-28 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_2_max": {
+        "units":      "m3/m3",
+        "long_name":  "Daily maximum volumetric soil water layer 2 7-28 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_3_mean": {
+        "units":      "m3/m3",
+        "long_name":  "Daily mean volumetric soil water layer 3 28-100 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_3_min": {
+        "units":      "m3/m3",
+        "long_name":  "Daily minimum volumetric soil water layer 3 28-100 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_3_max": {
+        "units":      "m3/m3",
+        "long_name":  "Daily maximum volumetric soil water layer 3 28-100 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_4_mean": {
+        "units":      "m3/m3",
+        "long_name":  "Daily mean volumetric soil water layer 4 100-289 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_4_min": {
+        "units":      "m3/m3",
+        "long_name":  "Daily minimum volumetric soil water layer 4 100-289 cm (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "volumetric_soil_water_layer_4_max": {
+        "units":      "m3/m3",
+        "long_name":  "Daily maximum volumetric soil water layer 4 100-289 cm (ERA5-Land)",
         "_FillValue": -9999.0,
     },
 }
@@ -86,11 +256,20 @@ VAR_META = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def load_attributes() -> dict[str, dict]:
-    """Load the attributes CSV keyed by gauge_id."""
-    if not ATTR_PATH.exists():
-        return {}
-    with open(ATTR_PATH, newline="") as f:
-        return {row["gauge_id"]: row for row in csv.DictReader(f)}
+    """
+    Load and merge caravan + other attribute CSVs, keyed by gauge_id.
+    caravan attrs hold climate stats; other attrs hold gauge metadata
+    including streamflow_period and streamflow_missing.
+    """
+    merged: dict[str, dict] = {}
+    for path in (CARAVAN_ATTR, OTHER_ATTR):
+        if path.exists():
+            with open(path, newline="") as f:
+                for row in csv.DictReader(f):
+                    gid = row.get("gauge_id", "")
+                    if gid:
+                        merged.setdefault(gid, {}).update(row)
+    return merged
 
 
 def read_csv(csv_path: Path) -> tuple[list, dict[str, list]]:
@@ -174,7 +353,8 @@ def write_nc(gauge: dict, attrs: dict) -> Path:
             else f"Victorian Water Monitoring (data.water.vic.gov.au), "
                  f"Station {gauge['station_id']}"
         ),
-        "met_source":        "SILO DataDrill (www.longpaddock.qld.gov.au/silo/)",
+        "met_source":        ("SILO DataDrill (www.longpaddock.qld.gov.au/silo/); "
+                             "ERA5-Land via Google Earth Engine (ECMWF/ERA5_LAND/HOURLY)"),
         "license":           "CC-BY-4.0",
         "notes":             gauge.get("notes", ""),
         "created":           datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),

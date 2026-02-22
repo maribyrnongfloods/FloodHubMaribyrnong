@@ -1,6 +1,10 @@
 # Generated output — run the scripts to reproduce
 caravan_maribyrnong/
 
+# Per-script data caches (deleted to force re-download)
+era5land_cache_*.json
+silo_cache_*.csv
+
 # Python
 __pycache__/
 *.py[cod]
