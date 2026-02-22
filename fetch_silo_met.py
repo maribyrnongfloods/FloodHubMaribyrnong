@@ -379,9 +379,9 @@ def main():
 
     for gauge in GAUGES:
         gid = gauge["gauge_id"]
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print(f"SILO met: {gauge['name']}")
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
 
         if gauge["lat"] is None or gauge["lon"] is None:
             print("  Skipping — lat/lon not set in gauges_config.py")
@@ -402,12 +402,12 @@ def main():
         write_caravan_attributes(climate_stats)
 
     print(f"""
-{'═' * 60}
+{'=' * 60}
  SILO merge complete for {len(climate_stats)} gauge(s).
  Next steps:
    python fetch_era5land.py
    python fetch_hydroatlas.py
-{'═' * 60}
+{'=' * 60}
 """)
 
 

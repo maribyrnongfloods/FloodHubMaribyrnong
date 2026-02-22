@@ -102,13 +102,14 @@ def init_gee():
         print("       Then authenticate once with: earthengine authenticate")
         sys.exit(1)
 
+    GEE_PROJECT = "floodhubmaribyrnong"
     print("Initialising Google Earth Engine ...")
     try:
-        ee.Initialize()
+        ee.Initialize(project=GEE_PROJECT)
     except Exception:
         print("  Not authenticated — opening browser for Google sign-in ...")
         ee.Authenticate()
-        ee.Initialize()
+        ee.Initialize(project=GEE_PROJECT)
 
     return ee
 
@@ -284,9 +285,9 @@ def main():
 
     for gauge in GAUGES:
         gid = gauge["gauge_id"]
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print(f"ERA5-Land: {gauge['name']} ({gauge['station_id']})")
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
 
         if gauge["lat"] is None or gauge["lon"] is None:
             print("  Skipping — lat/lon not set in gauges_config.py")
@@ -302,13 +303,13 @@ def main():
         merge_era5land(gauge, era5_by_date)
 
     print(f"""
-{'═' * 60}
+{'=' * 60}
  ERA5-Land merge complete.
  Next steps:
    python fetch_hydroatlas.py
    python fetch_catchments.py
    python write_netcdf.py
-{'═' * 60}
+{'=' * 60}
 """)
 
 

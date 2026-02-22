@@ -23,32 +23,39 @@ LICENSE_TEXT = """\
 ## Dataset extension
 
 This dataset extension contributes streamflow and meteorological timeseries
-for two gauging stations on the Maribyrnong River, Victoria, Australia, to
-the [Caravan](https://github.com/kratzert/Caravan) community dataset.
+for 13 gauging stations across the Maribyrnong River catchment, Victoria,
+Australia, to the [Caravan](https://github.com/kratzert/Caravan) community
+dataset.
+
+### Mainstem gauges (Melbourne Water API)
 
 | gauge_id | Station name | Station ID |
 |---|---|---|
+| aus_vic_230100 | Maribyrnong River at Darraweit | 230100A |
+| aus_vic_230211 | Maribyrnong River at Clarkefield | 230211A |
+| aus_vic_230104 | Maribyrnong River at Sunbury | 230104A |
+| aus_vic_230107 | Konagaderra Creek at Konagaderra | 230107A |
 | aus_vic_230200 | Maribyrnong River at Keilor | 230200 |
 | aus_vic_230106 | Maribyrnong River at Chifley Drive | 230106A |
+
+### Tributary gauges (Victorian Water / Hydstra API)
+
+| gauge_id | Station name | Station ID |
+|---|---|---|
+| aus_vic_230210 | Jacksons Creek at Bullengarook | 230210 |
+| aus_vic_230206 | Jackson Creek at Gisborne | 230206 |
+| aus_vic_230202 | Jackson Creek at Sunbury | 230202 |
+| aus_vic_230205 | Deep Creek at Bulla | 230205 |
+| aus_vic_230209 | Barringo Creek at Barringo | 230209 |
+| aus_vic_230213 | Turritable Creek at Mount Macedon | 230213 |
+| aus_vic_230227 | Main Creek at Kerrie | 230227 |
 
 ---
 
 ## Streamflow data
 
-**Station 230200 — Maribyrnong River at Keilor**
-
-Source: Victorian Water Monitoring Information System (WMIS)
-<https://data.water.vic.gov.au/>
-
-Provider: Victorian Department of Energy, Environment and Climate Action
-(DEECA), through the Victorian Water Register.
-
-Licence: [Creative Commons Attribution 4.0 International (CC BY 4.0)](
-https://creativecommons.org/licenses/by/4.0/)
-
----
-
-**Station 230106A — Maribyrnong River at Chifley Drive**
+**Mainstem stations (230100A, 230211A, 230104A, 230107A, 230106A) —
+Melbourne Water public API**
 
 Source: Melbourne Water public API
 <https://api.melbournewater.com.au/rainfall-river-level>
@@ -58,9 +65,23 @@ Provider: Melbourne Water Corporation.
 Licence: [Creative Commons Attribution 4.0 International (CC BY 4.0)](
 https://creativecommons.org/licenses/by/4.0/)
 
-Note: Flow at this station is only reliable above approximately 1 m water
-level (> 16,520 ML/day) due to tidal influence at the gauge location.
+Note: Flow at station 230106A (Chifley Drive) is only reliable above
+approximately 1 m water level (> 16,520 ML/day) due to tidal influence.
 Days below this threshold are absent from the timeseries.
+
+---
+
+**Keilor and tributary stations (230200, 230210, 230206, 230202, 230205,
+230209, 230213, 230227) — Victorian Water Monitoring Information System**
+
+Source: Victorian Water Monitoring Information System (WMIS)
+<https://data.water.vic.gov.au/>
+
+Provider: Victorian Department of Energy, Environment and Climate Action
+(DEECA), through the Victorian Water Register.
+
+Licence: [Creative Commons Attribution 4.0 International (CC BY 4.0)](
+https://creativecommons.org/licenses/by/4.0/)
 
 ---
 

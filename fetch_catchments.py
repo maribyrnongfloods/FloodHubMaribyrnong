@@ -53,13 +53,14 @@ def init_gee():
         print("       Then authenticate once with: earthengine authenticate")
         sys.exit(1)
 
+    GEE_PROJECT = "floodhubmaribyrnong"
     print("Initialising Google Earth Engine ...")
     try:
-        ee.Initialize()
+        ee.Initialize(project=GEE_PROJECT)
     except Exception:
         print("  Not authenticated — opening browser for Google sign-in ...")
         ee.Authenticate()
-        ee.Initialize()
+        ee.Initialize(project=GEE_PROJECT)
 
     return ee
 
@@ -146,9 +147,9 @@ def main():
 
     for gauge in GAUGES:
         gid = gauge["gauge_id"]
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print(f"Gauge: {gauge['name']} ({gauge['station_id']})")
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
 
         if gauge["lat"] is None or gauge["lon"] is None:
             print("  Skipping — lat/lon not set in gauges_config.py")
@@ -213,7 +214,7 @@ def main():
         print("        Then re-run this script, or convert the GeoJSON manually in QGIS.")
 
     print(f"""
-{'═' * 60}
+{'=' * 60}
  Catchment boundaries written ({len(all_features)} gauge(s)):
 
    caravan_maribyrnong/shapefiles/
@@ -233,9 +234,9 @@ def main():
  Area check: compare the up_area_km2 field in each GeoJSON with the
  known catchment area in gauges_config.py.  A difference > 15% may
  indicate the gauge is near a confluence and the outlet basin cell
- captures a different sub-basin — inspect the geometry in GEE Code
+ captures a different sub-basin -- inspect the geometry in GEE Code
  Editor before proceeding.
-{'═' * 60}
+{'=' * 60}
 """)
 
 

@@ -392,7 +392,7 @@ def main():
 
     for gauge in GAUGES:
         gid = gauge["gauge_id"]
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
         print(f"Gauge: {gauge['name']} ({gauge['station_id']})")
 
         try:
@@ -405,16 +405,16 @@ def main():
             print(f"  ERROR — {exc}")
 
     print(f"""
-{'═' * 60}
+{'=' * 60}
  netCDF files written: {len(written)}
 """ + "\n".join(f"   {p}" for p in written) + f"""
 
  Next steps:
    python fetch_catchments.py         (catchment boundary shapefiles)
    python generate_license.py         (license markdown file)
-   → then upload everything to Zenodo and open a GitHub issue at
+   -> then upload everything to Zenodo and open a GitHub issue at
      https://github.com/kratzert/Caravan
-{'═' * 60}
+{'=' * 60}
 """)
 
 
