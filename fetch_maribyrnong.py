@@ -111,7 +111,7 @@ def fetch_hydstra_all(gauge: dict) -> list[tuple[str, float]]:
             good += 1
 
         print(f"{good} days")
-        time.sleep(0.5)
+        time.sleep(2)
 
     return rows
 
@@ -185,7 +185,7 @@ def fetch_melbwater_all(gauge: dict) -> list[tuple[str, float]]:
             good += 1
 
         print(f"{good} days with flow")
-        time.sleep(0.5)
+        time.sleep(2)
 
     return rows
 
