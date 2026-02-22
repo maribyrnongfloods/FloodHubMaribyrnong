@@ -12,7 +12,8 @@
       "WebFetch(domain:grdc.bafg.de)",
       "Bash(python -m pytest:*)",
       "Bash(git branch:*)",
-      "Bash(git remote set-url:*)"
+      "Bash(git remote set-url:*)",
+      "Bash(chmod:*)"
     ]
   }
 }
