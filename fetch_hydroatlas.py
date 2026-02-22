@@ -50,13 +50,14 @@ def init_gee() -> object:
         print("       Then authenticate once with: earthengine authenticate")
         sys.exit(1)
 
+    GEE_PROJECT = "floodhubmaribyrnong"
     print("Initialising Google Earth Engine ...")
     try:
-        ee.Initialize()
+        ee.Initialize(project=GEE_PROJECT)
     except Exception:
         print("  Not authenticated — opening browser for Google sign-in ...")
         ee.Authenticate()
-        ee.Initialize()
+        ee.Initialize(project=GEE_PROJECT)
 
     return ee
 
@@ -161,9 +162,9 @@ def main():
 
     for gauge in GAUGES:
         gid = gauge["gauge_id"]
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print(f"Gauge: {gauge['name']} ({gauge['station_id']})")
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
 
         if gauge["lat"] is None or gauge["lon"] is None:
             print("  Skipping — lat/lon not set in gauges_config.py")
@@ -196,21 +197,21 @@ def main():
         write_csv(attr_rows)
 
     print(f"""
-{'═' * 60}
+{'=' * 60}
  HydroATLAS extraction complete ({len(attr_rows)} gauge(s)).
 
  All three Caravan attribute files are now ready:
-   attributes_caravan_aus_vic.csv     ← core attributes
-   attributes_hydroatlas_aus_vic.csv  ← HydroATLAS (just written)
+   attributes_caravan_aus_vic.csv     <- core attributes
+   attributes_hydroatlas_aus_vic.csv  <- HydroATLAS (just written)
 
  Caravan submission checklist:
-   ✓  fetch_maribyrnong.py  (streamflow timeseries)
-   ✓  fetch_silo_met.py     (met data + climate attributes)
-   ✓  fetch_hydroatlas.py   (this script)
-   ☐  Fork https://github.com/kratzert/Caravan
-   ☐  Copy caravan_maribyrnong/ into the repo structure
-   ☐  Open a pull request
-{'═' * 60}
+   [x] fetch_maribyrnong.py  (streamflow timeseries)
+   [x] fetch_silo_met.py     (met data + climate attributes)
+   [x] fetch_hydroatlas.py   (this script)
+   [ ] Fork https://github.com/kratzert/Caravan
+   [ ] Copy caravan_maribyrnong/ into the repo structure
+   [ ] Open a pull request
+{'=' * 60}
 """)
 
 

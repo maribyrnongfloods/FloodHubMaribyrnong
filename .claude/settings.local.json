@@ -18,7 +18,11 @@
       "Bash(python test_run.py:*)",
       "Bash(python:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:accounts.water.vic.gov.au)",
+      "WebFetch(domain:www.bom.gov.au)",
+      "Bash(grep:*)"
     ]
   }
 }
