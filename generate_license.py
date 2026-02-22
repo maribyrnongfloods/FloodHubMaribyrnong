@@ -128,7 +128,7 @@ Caravan dataset paper:
 def main():
     LICENSE_DIR.mkdir(parents=True, exist_ok=True)
     LICENSE_PATH.write_text(LICENSE_TEXT, encoding="utf-8")
-    print(f"License file written → {LICENSE_PATH}")
+    print(f"License file written -> {LICENSE_PATH}")
 
 
 if __name__ == "__main__":

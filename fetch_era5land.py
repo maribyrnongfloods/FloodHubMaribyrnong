@@ -219,7 +219,7 @@ def fetch_all_era5land(ee, gauge: dict, cache_path: Path) -> dict[str, dict]:
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_path, "w") as f:
         json.dump(all_rows, f)
-    print(f"    Cached → {cache_path.name}")
+    print(f"    Cached -> {cache_path.name}")
 
     return {r["date"]: r for r in all_rows}
 
@@ -272,7 +272,7 @@ def merge_era5land(gauge: dict, era5_by_date: dict[str, dict]) -> None:
         writer = csv.DictWriter(f, fieldnames=all_cols)
         writer.writeheader()
         writer.writerows(merged)
-    print(f"    Timeseries updated → {ts_path}")
+    print(f"    Timeseries updated -> {ts_path}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────

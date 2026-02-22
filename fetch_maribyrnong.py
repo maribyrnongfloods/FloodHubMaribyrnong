@@ -47,21 +47,19 @@ def fetch_hydstra_year(station_id: str, start: date, end: date,
     Uses server-side rating table conversion: water level → discharge.
     """
     params = {
-        "function": "get_ts_traces",
-        "version": 2,
-        "params": {
-            "site_list":  station_id,
-            "datasource": "PUBLISH",
-            "varfrom":    "100.00",   # water level (m)
-            "varto":      "141.00",   # discharge (ML/day)
-            "start_time": start.strftime("%Y%m%d") + "000000",
-            "end_time":   end.strftime("%Y%m%d")   + "235959",
-            "interval":   "day",
-            "multiplier": 1,
-            "data_type":  "mean",
-        },
+        "function":   "get_ts_traces",
+        "version":    "2",
+        "site_list":  station_id,
+        "datasource": "PUBLISH",
+        "varfrom":    "100.00",   # water level (m)
+        "varto":      "141.00",   # discharge (ML/day)
+        "start_time": start.strftime("%Y%m%d") + "000000",
+        "end_time":   end.strftime("%Y%m%d")   + "235959",
+        "interval":   "day",
+        "multiplier": "1",
+        "data_type":  "mean",
     }
-    url = HYDSTRA_BASE + "?" + urllib.parse.quote(json.dumps(params))
+    url = HYDSTRA_BASE + "?" + urllib.parse.urlencode(params)
 
     for attempt in range(retries):
         try:
@@ -108,7 +106,7 @@ def fetch_hydstra_all(gauge: dict) -> list[tuple[str, float]]:
             raw = float(pt["v"])
             if raw < 0:
                 continue
-            ts = pt["t"]
+            ts = str(pt["t"])
             rows.append((f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}", raw))
             good += 1
 
@@ -136,9 +134,16 @@ def fetch_melbwater_year(station_id: str, start: date, end: date,
         f"?fromDate={start.isoformat()}&toDate={end.isoformat()}"
     )
 
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept":     "application/json",
+        "Origin":     "https://www.melbournewater.com.au",
+        "Referer":    "https://www.melbournewater.com.au/",
+    })
+
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(url, timeout=60) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode())
             break
         except Exception:
@@ -252,7 +257,7 @@ def process_gauge(gauge: dict) -> dict | None:
         f.write("date,streamflow\n")
         for day_str, mm_day in rows:
             f.write(f"{day_str},{mm_day:.4f}\n")
-    print(f"  Timeseries → {ts_path}")
+    print(f"  Timeseries -> {ts_path}")
 
     # ── Compute attributes ────────────────────────────────────────────────────
     period_str = f"{rows[0][0]}/{rows[-1][0]}"
@@ -306,7 +311,7 @@ def main():
             writer = csv.DictWriter(f, fieldnames=attr_fields)
             writer.writeheader()
             writer.writerows(attr_rows)
-        print(f"\nGauge metadata → {attr_path}  ({len(attr_rows)} gauges)")
+        print(f"\nGauge metadata -> {attr_path}  ({len(attr_rows)} gauges)")
 
     print(f"""
 {'═' * 60}

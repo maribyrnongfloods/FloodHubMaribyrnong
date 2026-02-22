@@ -145,7 +145,7 @@ def write_csv(rows: list[dict]) -> None:
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"\nWritten → {OUT_PATH}")
+    print(f"\nWritten -> {OUT_PATH}")
     print(f"  {len(rows)} gauge(s), {len(all_keys) - 1} HydroATLAS columns")
 
 
@@ -190,7 +190,7 @@ def main():
         json_dir.mkdir(parents=True, exist_ok=True)
         raw_path = json_dir / f"hydroatlas_raw_{gid}.json"
         raw_path.write_text(json.dumps(props, indent=2))
-        print(f"  Raw JSON → {raw_path.name}")
+        print(f"  Raw JSON -> {raw_path.name}")
 
     if attr_rows:
         write_csv(attr_rows)

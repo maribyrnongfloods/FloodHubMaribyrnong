@@ -397,7 +397,7 @@ def main():
 
         try:
             out_path = write_nc(gauge, attrs)
-            print(f"  Written → {out_path}")
+            print(f"  Written -> {out_path}")
             written.append(out_path)
         except FileNotFoundError as exc:
             print(f"  SKIP — {exc}")

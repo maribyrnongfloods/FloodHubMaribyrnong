@@ -175,7 +175,7 @@ def main():
         # Save individual GeoJSON
         out_path = OUT_DIR / f"{gid}_catchment.geojson"
         out_path.write_text(json.dumps(feature, indent=2))
-        print(f"  Saved → {out_path}")
+        print(f"  Saved -> {out_path}")
 
         all_features.append(feature)
 
@@ -205,7 +205,7 @@ def main():
             single = gdf[gdf["gauge_id"] == g]
             if not single.empty:
                 single.to_file(str(OUT_DIR / f"{g}_catchment.shp"))
-        print(f"\n  Shapefile → {OUT_DIR}/aus_vic_catchments.shp  (+ per-gauge .shp)")
+        print(f"\n  Shapefile -> {OUT_DIR}/aus_vic_catchments.shp  (+ per-gauge .shp)")
         shp_written = True
     except ImportError:
         print("\n  NOTE: geopandas not installed — ESRI shapefile not written.")

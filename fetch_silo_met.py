@@ -77,19 +77,30 @@ def fetch_silo_chunk(lat: float, lon: float, start: date, end: date,
 
 def parse_silo_csv(raw_text: str) -> list[dict]:
     """
-    Parse SILO alldata response. Skips comment lines at the top and finds
-    the header row containing 'Date', then parses as CSV.
+    Parse SILO alldata response (space-delimited).
+    Skips comment/metadata lines, finds the header row starting with 'Date',
+    skips the units row that follows it, then parses data rows.
     """
     lines = raw_text.splitlines()
     header_idx = None
     for i, line in enumerate(lines):
-        if line.strip().lower().startswith("date"):
+        stripped = line.strip()
+        if stripped.lower().startswith("date") and not stripped.startswith('"'):
             header_idx = i
             break
     if header_idx is None:
         raise ValueError("Could not find 'Date' header in SILO response")
-    reader = csv.DictReader(lines[header_idx:])
-    return list(reader)
+
+    headers = lines[header_idx].split()
+    result = []
+    for line in lines[header_idx + 1:]:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("(") or stripped.startswith('"'):
+            continue   # skip units row and comment lines
+        values = stripped.split()
+        if len(values) >= len(headers):
+            result.append(dict(zip(headers, values)))
+    return result
 
 
 def fetch_all_silo(lat: float, lon: float, username: str,
@@ -111,7 +122,7 @@ def fetch_all_silo(lat: float, lon: float, username: str,
     while year <= date.today().year:
         chunk_start = max(SILO_START, date(year, 1, 1))
         chunk_end   = min(date.today(), date(year + CHUNK_YEARS - 1, 12, 31))
-        print(f"    {chunk_start} → {chunk_end} ...", end=" ", flush=True)
+        print(f"    {chunk_start} -> {chunk_end} ...", end=" ", flush=True)
 
         try:
             raw = fetch_silo_chunk(lat, lon, chunk_start, chunk_end, username)
@@ -140,19 +151,19 @@ def fetch_all_silo(lat: float, lon: float, username: str,
     if header_line:
         cache_path.write_text(header_line + "\n" + "\n".join(data_lines),
                               encoding="utf-8")
-    print(f"    Cached → {cache_path.name}")
+    print(f"    Cached -> {cache_path.name}")
     return all_rows
 
 
 # ── Column detection ──────────────────────────────────────────────────────────
 
 SILO_COL_MAP = {
-    "daily_rain":    ["daily_rain", "rain"],
-    "max_temp":      ["max_temp", "maximum_temperature"],
-    "min_temp":      ["min_temp", "minimum_temperature"],
-    "et_morton_pot": ["et_morton_potential", "et_morton_pot"],
-    "radiation":     ["radiation", "solar_radiation"],
-    "vp":            ["vp", "vapour_pressure"],
+    "daily_rain":    ["Rain", "daily_rain", "rain"],
+    "max_temp":      ["T.Max", "max_temp", "maximum_temperature"],
+    "min_temp":      ["T.Min", "min_temp", "minimum_temperature"],
+    "et_morton_pot": ["Mpot", "et_morton_potential", "et_morton_pot"],
+    "radiation":     ["Radn", "radiation", "solar_radiation"],
+    "vp":            ["VP", "vp", "vapour_pressure"],
 }
 
 def detect_columns(fieldnames: list[str]) -> dict[str, str | None]:
@@ -266,7 +277,7 @@ def merge_gauge(gauge: dict, silo_rows: list[dict]) -> dict | None:
         writer = csv.DictWriter(f, fieldnames=list(merged[0].keys()))
         writer.writeheader()
         writer.writerows(merged)
-    print(f"    Timeseries updated → {ts_path}")
+    print(f"    Timeseries updated -> {ts_path}")
 
     # ── Compute climate stats ─────────────────────────────────────────────────
     if not met_pairs:
@@ -347,7 +358,7 @@ def write_caravan_attributes(climate_stats: list[dict]) -> None:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
         writer.writerows(climate_stats)
-    print(f"\n  Caravan attributes → {attr_path}  ({len(climate_stats)} gauges)")
+    print(f"\n  Caravan attributes -> {attr_path}  ({len(climate_stats)} gauges)")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
