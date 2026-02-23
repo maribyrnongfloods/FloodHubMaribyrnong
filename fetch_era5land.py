@@ -49,8 +49,9 @@ from gauges_config import GAUGES
 OUT_DIR = Path("caravan_maribyrnong")
 TS_DIR  = OUT_DIR / "timeseries" / "csv" / "aus_vic"
 
-# ERA5-Land coverage starts 1950; fetch from 1981 to match Caravan standard
-ERA5_START_YEAR = 1981
+# ERA5-Land coverage starts 1950; fetch from 1950 to maximise overlap with
+# long-record gauges (e.g. Keilor 230200 which starts 1908).
+ERA5_START_YEAR = 1950
 
 # GEE daily aggregated collection (24x fewer images than hourly)
 GEE_COLLECTION = "ECMWF/ERA5_LAND/DAILY_AGGR"
@@ -214,7 +215,10 @@ def fetch_era5land_year(ee, lat: float, lon: float, year: int) -> list[dict]:
         ts_ms    = row_dict.get("time")
         if ts_ms is None:
             continue
-        dt       = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+        # timedelta-based conversion handles pre-1970 timestamps on Windows
+        # (datetime.fromtimestamp() raises OSError for negative values there)
+        from datetime import timedelta
+        dt       = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(milliseconds=ts_ms)
         date_str = dt.strftime("%Y-%m-%d")
 
         rec = {"date": date_str}
