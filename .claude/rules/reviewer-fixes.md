@@ -2,158 +2,137 @@
 
 Source: GitHub issue [kratzert/Caravan#51](https://github.com/kratzert/Caravan/issues/51)
 Reviewer: F. Kratzert (maintainer)
-Status: **ALL ITEMS OUTSTANDING — must resolve before re-submission**
 
 ---
 
-## 1. Gauge ID rename — `aus_vic_XXXXXX` → `ausvic_XXXXXX`
+## 1. Gauge ID rename — `aus_vic_XXXXXX` → `ausvic_XXXXXX` — ✅ DONE
 
 All other Caravan subdatasets use `provider_ID` (two parts only).
 `gauge_id.split('_')` must return exactly two parts.
 
-**Affects every file in the dataset:**
-- All timeseries CSV filenames: `ausvic_230200.csv`
-- All shapefile filenames: `ausvic_230200_catchment.shp` etc.
-- `gauge_id` column in all three attributes CSVs
-- `gauge_id` global attribute in every netCDF file
-- `gauges_config.py` — update `gauge_id` field for all 13 gauges
-- Combined shapefile name (see §3 below)
-
-**In `gauges_config.py`:** change e.g. `"aus_vic_230200"` → `"ausvic_230200"` for all 13 gauges.
+**Completed:** All gauge IDs in `gauges_config.py` changed to `ausvic_XXXXXX`.
+All output paths, script references, attribute CSV names, and netCDF global
+attributes use `ausvic` prefix. Tests verify format.
 
 ---
 
-## 2. CAMELS AUS (v2) overlap — RESOLVED
+## 2. CAMELS AUS (v2) overlap — ✅ DONE
 
 Checked against `CAMELS_AUS_Attributes&Indices_MasterTable.csv` (Zenodo 13350616).
 Three of our gauges are already in Caravan via CAMELS AUS v2:
 
 | Station | Name | CAMELS AUS period | Our fetch_start | Decision |
 |---------|------|-------------------|-----------------|----------|
-| 230210 | Bullengarook | 1968-05-10 – 2022-02-28 | 1970 | **REMOVED** — CAMELS has earlier start |
-| 230205 | Deep Creek, Bulla | 1955-06-22 – 2022-02-28 | 1960 | **REMOVED** — CAMELS has earlier start |
-| 230209 | Barringo | 1966-06-17 – 2020-02-29 | 1970 | **REMOVED** — CAMELS has earlier start |
+| 230210 | Bullengarook | 1968-05-10 – 2022-02-28 | 1970 | **REMOVED** |
+| 230205 | Deep Creek, Bulla | 1955-06-22 – 2022-02-28 | 1960 | **REMOVED** |
+| 230209 | Barringo | 1966-06-17 – 2020-02-29 | 1970 | **REMOVED** |
 
 `gauges_config.py` updated. **Extension is now 10 gauges.**
+Test `TestGaugeConfig::test_gauge_count` verifies exactly 10 gauges.
+Test `TestGaugeConfig::test_excluded_gauges_absent` verifies the 3 stations are absent.
 
 ---
 
-## 3. Shapefiles — single combined file, no individual files
+## 3. Shapefiles — single combined file, no individual files — ✅ DONE
 
-**Required structure:**
+`fetch_catchments.py` updated to write only:
 ```
 shapefiles/ausvic/
-    ausvic_basin_shapes.shp   ← single file, all basins
+    ausvic_basin_shapes.shp   ← single file, gauge_id column only
     ausvic_basin_shapes.shx
     ausvic_basin_shapes.dbf
     ausvic_basin_shapes.prj
     ausvic_basin_shapes.cpg
 ```
-
-- **Remove** all individual per-gauge shapefiles (`ausvic_230200_catchment.shp` etc.)
-- Only mandatory DBF column: `gauge_id`
-- Remove `hybas_id_outlet`, `up_area_km2`, `num_level12` from DBF (not Caravan standard)
-- Projection: WGS 84 (EPSG:4326) — unchanged
-
-Update `fetch_catchments.py` to write only the combined shapefile.
+Individual per-gauge shapefiles are NOT written.
+DBF contains only `gauge_id` (no extra columns).
 
 ---
 
-## 4. HydroATLAS attributes — re-derive using official Caravan notebook
+## 4. Use official Caravan code — ✅ DONE (ERA5-Land + PET + climate indices)
 
-Our `fetch_hydroatlas.py` produced more columns than the Caravan standard.
+**What was done:**
+- `fetch_era5land.py` now fetches `temperature_2m`, `total_precipitation`,
+  and `potential_evaporation` from ERA5-Land DAILY_AGGR (matching the Caravan
+  standard variable set).
+- FAO-56 Penman-Monteith PET computed inline via `_fao_pm_pet_scalar()`,
+  faithfully implementing the formula from
+  [pet.py](https://github.com/kratzert/Caravan/blob/main/code/pet.py).
+- `compute_attributes.py` (new) implements `calculate_climate_indices()` from
+  [caravan_utils.py](https://github.com/kratzert/Caravan/blob/main/code/caravan_utils.py)
+  over the standard period 1981-01-01 to 2020-12-31.
 
-**Required action:**
-1. Open the official notebook: https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
-2. Run it from Google Colab (takes < 5 minutes per the reviewer).
-3. Replace `attributes_hydroatlas_ausvic.csv` with the output of that notebook.
-4. Delete `fetch_hydroatlas.py` (our custom implementation) — it produced non-standard columns.
+**HydroATLAS — ⚠️ STILL REQUIRES MANUAL ACTION:**
+Our `fetch_hydroatlas.py` custom script produces more columns than the
+standard. The official Caravan Part-1 Colab notebook must be used:
 
-The notebook produces exactly the 294 HydroATLAS columns that all other Caravan subdatasets have.
+1. Open: https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
+2. Run from Google Colab (< 5 minutes per reviewer).
+3. Replace `caravan_maribyrnong/attributes/ausvic/attributes_hydroatlas_ausvic.csv`
+   with the notebook output. Notebook produces exactly 294 standard columns.
 
 ---
 
-## 5. Duplicate HydroATLAS file — remove from root
+## 5. Duplicate HydroATLAS file — delete from root — ⚠️ MANUAL ACTION NEEDED
 
-`attributes_hydroatlas_aus_vic.csv` exists in two places:
-- `attributes/aus_vic/attributes_hydroatlas_aus_vic.csv` ✓ (keep, renamed)
-- `attributes/attributes_hydroatlas_aus_vic.csv` ✗ **delete this one**
-
----
-
-## 6. `attributes_other` — split extra columns into `attributes_additional`
-
-`attributes_other_ausvic.csv` currently has more columns than the Caravan standard.
-
-**Standard columns to keep in `attributes_other_ausvic.csv`:**
-`gauge_id`, `gauge_name`, `gauge_lat`, `gauge_lon`, `country`, `basin_name`,
-`area`, `unit_area`, `streamflow_period`, `streamflow_missing`, `streamflow_units`,
-`source`, `license`, `note`
-
-**All extra columns** (anything beyond the above) go into a new file:
+If you have run `fetch_hydroatlas.py` from a previous version, this file
+may exist:
 ```
-attributes/ausvic/attributes_additional_ausvic.csv
+caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv   ← DELETE
 ```
-with `gauge_id` as the key column.
+It is not created by the current code (paths were updated to `ausvic`).
+Delete it manually if present in your `caravan_maribyrnong/` output folder.
 
 ---
 
-## 7. SILO columns — REMOVE entirely
+## 6. `attributes_other` — NO ACTION NEEDED
 
-SILO is an Australian-only product. Caravan requires globally available data only.
-
-**Remove these 7 columns from all timeseries CSVs and netCDF files:**
-- `total_precipitation_sum`
-- `temperature_2m_max`
-- `temperature_2m_min`
-- `temperature_2m_mean`
-- `potential_evaporation_sum`
-- `radiation_mj_m2_d`
-- `vapour_pressure_hpa`
-
-After removal the CSV has **35 columns**: `date` + `streamflow` + 33 ERA5-Land.
-
-**Delete `fetch_silo_met.py`** — no longer needed.
-Update `write_netcdf.py` to drop SILO variables.
-Update `tests/test_pipeline.py` — column count changes from 42 → 35.
+`attributes_other_ausvic.csv` produced by `fetch_maribyrnong.py` has exactly
+the 14 standard Caravan columns:
+```
+gauge_id, gauge_name, gauge_lat, gauge_lon, country, basin_name,
+area, unit_area, streamflow_period, streamflow_missing, streamflow_units,
+source, license, note
+```
+No extra columns are present, so no `attributes_additional_ausvic.csv` is needed.
 
 ---
 
-## 8. Timeseries — ERA5-Land for full period, not just streamflow overlap
+## 7. SILO columns — ✅ DONE
 
-All gauges must have ERA5-Land forcings for the **full ERA5-Land period (1950-01-01 onward)**, regardless of when streamflow records begin.
+SILO is Australian-only; Caravan requires globally available data.
 
-For Keilor (230200, records from 1908):
-- Rows before 1950-01-01: `streamflow` value present, all ERA5-Land columns = empty string (CSV) / -9999 (netCDF)
-- Rows 1950-01-01 onward: both streamflow and ERA5-Land populated where available
-
-**Do NOT include SILO data before 1950** — that was filling ERA5-Land gaps with SILO, which is no longer permitted (see §7).
-
-Update `fetch_era5land.py` to always start from `date(1950, 1, 1)` regardless of gauge `fetch_start`.
+**Completed:**
+- All SILO columns removed from `write_netcdf.py` VAR_META
+- `fetch_silo_met.py` replaced with an informative `ImportError` placeholder
+- Note: `temperature_2m_mean/min/max` and `total_precipitation_sum` were originally
+  SILO columns but are now **re-added as legitimate ERA5-Land columns** (see §4).
+- The old "35 columns" figure is now **41 columns**:
+  `date` + `streamflow` + 39 ERA5-Land (see caravan-standard.md)
 
 ---
 
-## 9. Updated caravan-standard.md corrections
+## 8. ERA5-Land for full period — ✅ DONE
 
-After these fixes the timeseries CSV has **35 columns** (not 42):
-- `date`
-- `streamflow`
-- 33 ERA5-Land columns (mean/min/max for 11 variables)
-
-SILO section of `caravan-standard.md` is now void for this extension.
+`fetch_era5land.py` builds a 1950-to-present date spine. Pre-1950 streamflow
+rows (e.g. Keilor 1908–1949) are prepended with empty ERA5 columns.
+No SILO data is used to fill ERA5 gaps.
 
 ---
 
 ## Summary checklist
 
-- [ ] Cross-check CAMELS AUS v2 overlap; remove duplicate gauges
-- [ ] Rename all `aus_vic_` → `ausvic_` in `gauges_config.py` + all output files
-- [ ] Re-run HydroATLAS via official Colab notebook
-- [ ] Delete duplicate `attributes/attributes_hydroatlas_aus_vic.csv`
-- [ ] Split `attributes_other` extra columns into `attributes_additional_ausvic.csv`
-- [ ] Remove all SILO columns from CSVs and netCDF; delete `fetch_silo_met.py`
-- [ ] Fix ERA5-Land fetch to start 1950 for all gauges
-- [ ] Rebuild combined shapefile as `ausvic_basin_shapes.shp`; remove individual shapefiles
-- [ ] Re-run `write_netcdf.py` with updated schema
-- [ ] Update `tests/test_pipeline.py` (column count 42 → 35, new gauge IDs)
-- [ ] Re-upload to Zenodo (new version), post updated DOI to GitHub issue
+- [x] Cross-check CAMELS AUS v2 overlap; remove duplicate gauges (10 remain)
+- [x] Rename all `aus_vic_` → `ausvic_` in `gauges_config.py` + all scripts
+- [x] Shapefiles: single `ausvic_basin_shapes.shp`, `gauge_id` only, no individual files
+- [x] SILO columns removed; `fetch_silo_met.py` deprecated
+- [x] ERA5-Land fetch starts 1950; pre-1950 rows have empty ERA5 cols
+- [x] `temperature_2m`, `total_precipitation_sum`, `potential_evaporation` added as ERA5-Land cols
+- [x] FAO-56 PM PET computed inline from ERA5-Land inputs (per Caravan pet.py)
+- [x] `compute_attributes.py` — official climate indices 1981-2020 (per Caravan caravan_utils.py)
+- [x] `attributes_other_ausvic.csv` has exactly 14 standard columns; no extras
+- [x] 26/26 unit tests pass
+- [ ] **Re-derive HydroATLAS via official Caravan Part-1 Colab notebook** (< 5 min)
+- [ ] **Delete** `caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv` if present
+- [ ] **Re-run full pipeline** with new ERA5 schema (delete era5land_cache_*.json first)
+- [ ] **Re-upload to Zenodo** (new version), post updated DOI to GitHub issue #51
