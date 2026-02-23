@@ -8,26 +8,26 @@ Contributing Maribyrnong River gauging stations to [Caravan](https://github.com/
 
 ### Maribyrnong mainstem — Melbourne Water API
 
-| Station | Name | Area (km²) | Data from |
-|---------|------|-----------|-----------|
-| 230100A | Maribyrnong River at Darraweit | 682.7 | 1996 |
-| 230211A | Maribyrnong River at Clarkefield | 177.9 | 2008 |
-| 230104A | Maribyrnong River at Sunbury | 406.7 | 1996 |
-| 230107A | Konagaderra Creek at Konagaderra | 682.7 | 1996 |
-| 230200 | Maribyrnong River at Keilor | 1305.4 | 1907 |
-| 230106A | Maribyrnong River at Chifley Drive* | 1413.6 | 1996 |
+| Station | Name | Area (km²) | Streamflow period |
+|---------|------|-----------|-------------------|
+| 230100A | Maribyrnong River at Darraweit | 682.7 | 2004-01-01 – 2025-12-29 |
+| 230211A | Maribyrnong River at Clarkefield | 177.9 | 2008-08-09 – 2026-01-15 |
+| 230104A | Maribyrnong River at Sunbury | 406.7 | 2004-01-01 – 2026-02-22 |
+| 230107A | Konagaderra Creek at Konagaderra | 682.7 | 2004-01-01 – 2025-12-14 |
+| 230200 | Maribyrnong River at Keilor | 1305.4 | 1908-02-02 – 2026-02-21 |
+| 230106A | Maribyrnong River at Chifley Drive* | 1413.6 | 2004-06-19 – 2026-01-13 |
 
 ### Tributaries — Victorian Water / Hydstra API
 
-| Station | Name | Area (km²) | Data from |
-|---------|------|-----------|-----------|
-| 230210 | Jacksons Creek at Bullengarook | 154.1 | 1970 |
-| 230206 | Jackson Creek at Gisborne | 154.1 | 1960 |
-| 230202 | Jackson Creek at Sunbury | 406.7 | 1960 |
-| 230205 | Deep Creek at Bulla | 876.1 | 1960 |
-| 230209 | Barringo Creek at Barringo | 109.9 | 1970 |
-| 230213 | Turritable Creek at Mount Macedon | 109.9 | 1980 |
-| 230227 | Main Creek at Kerrie | 177.9 | 1990 |
+| Station | Name | Area (km²) | Streamflow period |
+|---------|------|-----------|-------------------|
+| 230210 | Jacksons Creek at Bullengarook | 154.1 | 1970-01-01 – 2026-02-21 |
+| 230206 | Jackson Creek at Gisborne | 154.1 | 1960-05-10 – 2026-02-21 |
+| 230202 | Jackson Creek at Sunbury | 406.7 | 1960-01-01 – 2026-02-21 |
+| 230205 | Deep Creek at Bulla | 876.1 | 1960-01-01 – 2026-02-21 |
+| 230209 | Barringo Creek at Barringo | 109.9 | 1970-01-01 – 2026-02-21 |
+| 230213 | Turritable Creek at Mount Macedon | 109.9 | 1980-01-01 – 2026-02-21 |
+| 230227 | Main Creek at Kerrie | 177.9 | 1990-01-01 – 2026-02-21 |
 
 *Chifley Drive is in the tidal zone — flow is only reliable during high-flow events (>16,520 ML/day).
 
@@ -48,6 +48,33 @@ Run the scripts in sequence, each building on the previous:
 6. write_netcdf.py        → converts CSVs -> netCDF4 files (Caravan format)
 7. generate_license.py    → writes the required license markdown
 ```
+
+---
+
+## Dataset Coverage
+
+Status after full pipeline run (2026-02-23):
+
+| # | Station | Name | Streamflow | Flow days | ERA5-Land | ERA5 days |
+|---|---------|------|-----------|----------:|-----------|----------:|
+|  1 | 230100A | Maribyrnong River at Darraweit      | 2004-01-01 – 2025-12-29 |  5,487 | 2004-01-01 – 2025-12-29 |  5,487 |
+|  2 | 230211A | Maribyrnong River at Clarkefield    | 2008-08-09 – 2026-01-15 |  4,618 | 2008-08-09 – 2026-01-15 |  4,618 |
+|  3 | 230104A | Maribyrnong River at Sunbury        | 2004-01-01 – 2026-02-22 |  7,558 | 2004-01-01 – 2026-02-15 |  7,551 |
+|  4 | 230107A | Konagaderra Creek at Konagaderra    | 2004-01-01 – 2025-12-14 |  4,272 | 2004-01-01 – 2025-12-14 |  4,272 |
+|  5 | 230200  | Maribyrnong River at Keilor         | 1908-02-02 – 2026-02-21 | 36,484 | 1981-01-01 – 2026-02-15 | 16,413 |
+|  6 | 230106A | Maribyrnong River at Chifley Drive  | 2004-06-19 – 2026-01-13 |    263 | 2004-06-19 – 2026-01-13 |    263 |
+|  7 | 230210  | Jacksons Creek at Bullengarook      | 1970-01-01 – 2026-02-21 | 20,506 | 1981-01-01 – 2026-02-15 | 16,482 |
+|  8 | 230206  | Jackson Creek at Gisborne           | 1960-05-10 – 2026-02-21 | 24,029 | 1981-01-01 – 2026-02-15 | 16,482 |
+|  9 | 230202  | Jackson Creek at Sunbury            | 1960-01-01 – 2026-02-21 | 24,159 | 1981-01-01 – 2026-02-16 | 16,483 |
+| 10 | 230205  | Deep Creek at Bulla                 | 1960-01-01 – 2026-02-21 | 24,159 | 1981-01-01 – 2026-02-15 | 16,482 |
+| 11 | 230209  | Barringo Creek at Barringo          | 1970-01-01 – 2026-02-21 | 20,506 | 1981-01-01 – 2026-02-15 | 16,482 |
+| 12 | 230213  | Turritable Creek at Mount Macedon   | 1980-01-01 – 2026-02-21 | 16,854 | 1981-01-01 – 2026-02-15 | 16,482 |
+| 13 | 230227  | Main Creek at Kerrie                | 1990-01-01 – 2026-02-21 | 10,596 | 1990-01-01 – 2026-02-15 | 10,590 |
+
+Notes:
+- Keilor (230200) streamflow starts 1908 but ERA5-Land only covers 1981 onward (dataset limit).
+- Chifley Drive (230106A) has sparse flow records — tidal station, data only during major flood events.
+- ERA5-Land end dates lag streamflow by ~1 week due to the GEE `DAILY_AGGR` publication delay.
 
 ---
 
