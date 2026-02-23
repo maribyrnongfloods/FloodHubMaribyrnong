@@ -8,6 +8,8 @@ Contributing Maribyrnong River gauging stations to [Caravan](https://github.com/
 
 ## Gauge Network (13 stations)
 
+![Maribyrnong gauge network](gauge_map.png)
+
 ### Maribyrnong mainstem — Melbourne Water API
 
 | Station | Name | Area (km²) | Streamflow period |
