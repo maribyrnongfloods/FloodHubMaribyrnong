@@ -219,9 +219,9 @@ def process_gauge(gauge: dict) -> dict | None:
     name = gauge["name"]
     area = gauge["area_km2"]
 
-    print(f"\n{'─' * 60}")
+    print(f"\n{'-' * 60}")
     print(f"Gauge: {name} ({gauge['station_id']})")
-    print(f"{'─' * 60}")
+    print(f"{'-' * 60}")
 
     if area is None:
         print("  ERROR: area_km2 is not set in gauges_config.py — skipping.")
@@ -314,12 +314,12 @@ def main():
         print(f"\nGauge metadata -> {attr_path}  ({len(attr_rows)} gauges)")
 
     print(f"""
-{'═' * 60}
+{'=' * 60}
  Done. Next steps:
    python fetch_silo_met.py --username your@email.com
    python fetch_era5land.py
    python fetch_hydroatlas.py
-{'═' * 60}
+{'=' * 60}
 """)
 
 

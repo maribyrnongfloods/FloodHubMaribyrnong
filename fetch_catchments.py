@@ -218,9 +218,9 @@ def main():
  Catchment boundaries written ({len(all_features)} gauge(s)):
 
    caravan_maribyrnong/shapefiles/
-     aus_vic_catchments.geojson          ← combined FeatureCollection
+     aus_vic_catchments.geojson          <- combined FeatureCollection
 """ + "\n".join(f"     {g}_catchment.geojson" for g in gids) + (f"""
-     aus_vic_catchments.shp              ← combined shapefile (Caravan format)
+     aus_vic_catchments.shp              <- combined shapefile (Caravan format)
 """ if shp_written else "") + f"""
 
  Next — upload shapefile to GEE as an asset:

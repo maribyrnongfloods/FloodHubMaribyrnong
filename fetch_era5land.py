@@ -5,6 +5,9 @@ fetch_era5land.py
 Fetches daily ERA5-Land meteorological variables at each gauge location via
 Google Earth Engine and merges them into the existing timeseries CSVs.
 
+Uses ECMWF/ERA5_LAND/DAILY_AGGR (pre-aggregated daily statistics, 365 images/year)
+instead of the hourly collection (8,760 images/year) to avoid GEE memory limits.
+
 Adds the variables that SILO DataDrill does not provide:
     dewpoint_temperature_2m_mean/min/max     (degC)
     surface_net_solar_radiation_mean/min/max (W/m2)
@@ -36,7 +39,6 @@ import csv
 import json
 import sys
 import time
-from collections import defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -50,9 +52,10 @@ TS_DIR  = OUT_DIR / "timeseries" / "csv" / "aus_vic"
 # ERA5-Land coverage starts 1950; fetch from 1981 to match Caravan standard
 ERA5_START_YEAR = 1981
 
-# ── ERA5-Land variable definitions ────────────────────────────────────────────
+# GEE daily aggregated collection (24x fewer images than hourly)
+GEE_COLLECTION = "ECMWF/ERA5_LAND/DAILY_AGGR"
 
-# Instantaneous variables: aggregate to daily mean/min/max
+# Output column names (must match write_netcdf.py VAR_META keys)
 INSTANT_VARS = [
     "dewpoint_temperature_2m",
     "surface_pressure",
@@ -64,30 +67,10 @@ INSTANT_VARS = [
     "volumetric_soil_water_layer_3",
     "volumetric_soil_water_layer_4",
 ]
-
-# Accumulated variables: represent hourly flux/radiation; aggregate to daily
-# mean W/m² by averaging all 24 hourly J/m² values and dividing by 3600.
-# (Each ERA5-Land image holds J/m² accumulated since the previous hour.)
 ACCUM_VARS = [
     "surface_net_solar_radiation",
     "surface_net_thermal_radiation",
 ]
-
-ALL_GEE_VARS = INSTANT_VARS + ACCUM_VARS
-
-# ── Unit conversions applied after aggregation ────────────────────────────────
-
-def convert_units(var: str, value: float) -> float:
-    """Convert from ERA5-Land native units to Caravan output units."""
-    if var in ("dewpoint_temperature_2m",):
-        return value - 273.15                   # K → °C
-    if var == "surface_pressure":
-        return value / 1000.0                   # Pa → kPa
-    if var == "snow_depth_water_equivalent":
-        return value * 1000.0                   # m → mm
-    if var in ("surface_net_solar_radiation", "surface_net_thermal_radiation"):
-        return value / 3600.0                   # J/m² per hour → W/m²
-    return value                                # m³/m³ and m/s — no change
 
 
 # ── GEE helpers ───────────────────────────────────────────────────────────────
@@ -107,17 +90,72 @@ def init_gee():
     try:
         ee.Initialize(project=GEE_PROJECT)
     except Exception:
-        print("  Not authenticated — opening browser for Google sign-in ...")
+        print("  Not authenticated -- opening browser for Google sign-in ...")
         ee.Authenticate()
         ee.Initialize(project=GEE_PROJECT)
 
     return ee
 
 
+# ── Band mapping: output column -> (DAILY_AGGR source band, unit converter) ──
+#
+# In ECMWF/ERA5_LAND/DAILY_AGGR:
+#   Instantaneous state vars: bare name = daily mean (no _mean suffix),
+#                             {var}_min and {var}_max also exist.
+#   Accumulated flux vars:    {var}_sum  = J/m2/day (daily total)
+#                             {var}_min  = J/m2/hr  (hourly minimum)
+#                             {var}_max  = J/m2/hr  (hourly maximum)
+
+BAND_MAP: dict[str, tuple[str, object]] = {
+    # dewpoint temperature (K -> degC)
+    "dewpoint_temperature_2m_mean": ("dewpoint_temperature_2m",     lambda v: v - 273.15),
+    "dewpoint_temperature_2m_min":  ("dewpoint_temperature_2m_min", lambda v: v - 273.15),
+    "dewpoint_temperature_2m_max":  ("dewpoint_temperature_2m_max", lambda v: v - 273.15),
+    # surface pressure (Pa -> kPa)
+    "surface_pressure_mean":        ("surface_pressure",            lambda v: v / 1000.0),
+    "surface_pressure_min":         ("surface_pressure_min",        lambda v: v / 1000.0),
+    "surface_pressure_max":         ("surface_pressure_max",        lambda v: v / 1000.0),
+    # wind components (m/s -- no conversion)
+    "u_component_of_wind_10m_mean": ("u_component_of_wind_10m",     lambda v: v),
+    "u_component_of_wind_10m_min":  ("u_component_of_wind_10m_min", lambda v: v),
+    "u_component_of_wind_10m_max":  ("u_component_of_wind_10m_max", lambda v: v),
+    "v_component_of_wind_10m_mean": ("v_component_of_wind_10m",     lambda v: v),
+    "v_component_of_wind_10m_min":  ("v_component_of_wind_10m_min", lambda v: v),
+    "v_component_of_wind_10m_max":  ("v_component_of_wind_10m_max", lambda v: v),
+    # snow depth water equivalent (m -> mm)
+    "snow_depth_water_equivalent_mean": ("snow_depth_water_equivalent",     lambda v: v * 1000.0),
+    "snow_depth_water_equivalent_min":  ("snow_depth_water_equivalent_min", lambda v: v * 1000.0),
+    "snow_depth_water_equivalent_max":  ("snow_depth_water_equivalent_max", lambda v: v * 1000.0),
+    # volumetric soil water layers (m3/m3 -- no conversion)
+    "volumetric_soil_water_layer_1_mean": ("volumetric_soil_water_layer_1",     lambda v: v),
+    "volumetric_soil_water_layer_1_min":  ("volumetric_soil_water_layer_1_min", lambda v: v),
+    "volumetric_soil_water_layer_1_max":  ("volumetric_soil_water_layer_1_max", lambda v: v),
+    "volumetric_soil_water_layer_2_mean": ("volumetric_soil_water_layer_2",     lambda v: v),
+    "volumetric_soil_water_layer_2_min":  ("volumetric_soil_water_layer_2_min", lambda v: v),
+    "volumetric_soil_water_layer_2_max":  ("volumetric_soil_water_layer_2_max", lambda v: v),
+    "volumetric_soil_water_layer_3_mean": ("volumetric_soil_water_layer_3",     lambda v: v),
+    "volumetric_soil_water_layer_3_min":  ("volumetric_soil_water_layer_3_min", lambda v: v),
+    "volumetric_soil_water_layer_3_max":  ("volumetric_soil_water_layer_3_max", lambda v: v),
+    "volumetric_soil_water_layer_4_mean": ("volumetric_soil_water_layer_4",     lambda v: v),
+    "volumetric_soil_water_layer_4_min":  ("volumetric_soil_water_layer_4_min", lambda v: v),
+    "volumetric_soil_water_layer_4_max":  ("volumetric_soil_water_layer_4_max", lambda v: v),
+    # surface net solar radiation:
+    #   _sum  (J/m2/day) -> daily mean W/m2 = sum / 86400
+    #   _min/_max (J/m2/hr) -> W/m2 = value / 3600
+    "surface_net_solar_radiation_mean":   ("surface_net_solar_radiation_sum",  lambda v: v / 86400.0),
+    "surface_net_solar_radiation_min":    ("surface_net_solar_radiation_min",  lambda v: v / 3600.0),
+    "surface_net_solar_radiation_max":    ("surface_net_solar_radiation_max",  lambda v: v / 3600.0),
+    # surface net thermal radiation (same convention as solar)
+    "surface_net_thermal_radiation_mean": ("surface_net_thermal_radiation_sum", lambda v: v / 86400.0),
+    "surface_net_thermal_radiation_min":  ("surface_net_thermal_radiation_min", lambda v: v / 3600.0),
+    "surface_net_thermal_radiation_max":  ("surface_net_thermal_radiation_max", lambda v: v / 3600.0),
+}
+
+
 def fetch_era5land_year(ee, lat: float, lon: float, year: int) -> list[dict]:
     """
-    Fetch all ERA5-Land hourly records for one year at a point via getRegion,
-    then aggregate client-side to daily mean/min/max.
+    Fetch daily ERA5-Land statistics for one year at a point via getRegion,
+    using ECMWF/ERA5_LAND/DAILY_AGGR (365 images per year, pre-aggregated).
 
     Returns a list of dicts keyed by Caravan output column names.
     """
@@ -125,23 +163,25 @@ def fetch_era5land_year(ee, lat: float, lon: float, year: int) -> list[dict]:
     end   = f"{year + 1}-01-01"
 
     point = ee.Geometry.Point([lon, lat])
-    era5  = (
-        ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY")
+
+    # Unique source bands needed (may have duplicates when _sum maps to mean)
+    source_bands = list(dict.fromkeys(src for src, _ in BAND_MAP.values()))
+
+    daily_col = (
+        ee.ImageCollection(GEE_COLLECTION)
           .filterDate(start, end)
-          .select(ALL_GEE_VARS)
+          .select(source_bands)
     )
 
     # getRegion returns [[header], [row], [row], ...]
-    region = era5.getRegion(point, scale=9000).getInfo()
+    region = daily_col.getRegion(point, scale=9000).getInfo()
     if not region or len(region) < 2:
         return []
 
-    header = region[0]   # ['id', 'longitude', 'latitude', 'time', var1, ...]
+    header = region[0]   # ['id', 'longitude', 'latitude', 'time', band1, ...]
     rows   = region[1:]
 
-    # Group hourly values by UTC date
-    daily: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
-
+    result = []
     for row in rows:
         if None in row:
             continue
@@ -151,40 +191,11 @@ def fetch_era5land_year(ee, lat: float, lon: float, year: int) -> list[dict]:
             continue
         dt       = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
         date_str = dt.strftime("%Y-%m-%d")
-        for var in ALL_GEE_VARS:
-            val = row_dict.get(var)
-            if val is not None:
-                daily[date_str][var].append(float(val))
 
-    # Aggregate to daily and apply unit conversions
-    result = []
-    for date_str in sorted(daily):
         rec = {"date": date_str}
-        hourly = daily[date_str]
-
-        for var in INSTANT_VARS:
-            vals = hourly.get(var, [])
-            if vals:
-                rec[f"{var}_mean"] = round(convert_units(var, sum(vals) / len(vals)), 4)
-                rec[f"{var}_min"]  = round(convert_units(var, min(vals)), 4)
-                rec[f"{var}_max"]  = round(convert_units(var, max(vals)), 4)
-            else:
-                rec[f"{var}_mean"] = None
-                rec[f"{var}_min"]  = None
-                rec[f"{var}_max"]  = None
-
-        for var in ACCUM_VARS:
-            vals = hourly.get(var, [])
-            if vals:
-                # Average W/m² over the day
-                avg_wm2 = sum(convert_units(var, v) for v in vals) / len(vals)
-                rec[f"{var}_mean"] = round(avg_wm2, 4)
-                rec[f"{var}_min"]  = round(min(convert_units(var, v) for v in vals), 4)
-                rec[f"{var}_max"]  = round(max(convert_units(var, v) for v in vals), 4)
-            else:
-                rec[f"{var}_mean"] = None
-                rec[f"{var}_min"]  = None
-                rec[f"{var}_max"]  = None
+        for out_col, (src_band, converter) in BAND_MAP.items():
+            val = row_dict.get(src_band)
+            rec[out_col] = round(converter(val), 4) if val is not None else None
 
         result.append(rec)
 
@@ -214,8 +225,8 @@ def fetch_all_era5land(ee, gauge: dict, cache_path: Path) -> dict[str, dict]:
             print(f"{len(rows)} days")
             all_rows.extend(rows)
         except Exception as exc:
-            print(f"ERROR — {exc}")
-        time.sleep(1)
+            print(f"ERROR -- {exc}")
+        time.sleep(0.5)
 
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_path, "w") as f:
@@ -240,7 +251,7 @@ def merge_era5land(gauge: dict, era5_by_date: dict[str, dict]) -> None:
     ts_path = TS_DIR / f"{gid}.csv"
 
     if not ts_path.exists():
-        print(f"    ERROR: {ts_path} not found — run fetch_maribyrnong.py first.")
+        print(f"    ERROR: {ts_path} not found -- run fetch_maribyrnong.py first.")
         return
 
     with open(ts_path, newline="") as f:
@@ -250,10 +261,9 @@ def merge_era5land(gauge: dict, era5_by_date: dict[str, dict]) -> None:
         print("    WARNING: timeseries CSV is empty.")
         return
 
-    # Determine existing columns (avoid duplicating ERA5 cols if re-run)
+    # Build output column list; ERA5 cols are added if not already present
     existing_cols = list(flow_rows[0].keys())
-    new_cols      = [c for c in ERA5_COLS if c not in existing_cols]
-    all_cols      = existing_cols + new_cols
+    all_cols      = existing_cols + [c for c in ERA5_COLS if c not in existing_cols]
 
     matched = 0
     merged  = []
@@ -262,7 +272,8 @@ def merge_era5land(gauge: dict, era5_by_date: dict[str, dict]) -> None:
         if era5:
             matched += 1
         new_row = dict(row)
-        for col in new_cols:
+        # Always overwrite all ERA5 cols so re-runs fill previously empty slots
+        for col in ERA5_COLS:
             val = era5.get(col)
             new_row[col] = "" if val is None else val
         merged.append(new_row)
@@ -290,7 +301,7 @@ def main():
         print(f"{'-' * 60}")
 
         if gauge["lat"] is None or gauge["lon"] is None:
-            print("  Skipping — lat/lon not set in gauges_config.py")
+            print("  Skipping -- lat/lon not set in gauges_config.py")
             continue
 
         cache_path = OUT_DIR / f"era5land_cache_{gid}.json"

@@ -22,7 +22,11 @@
       "Bash(python3:*)",
       "WebFetch(domain:accounts.water.vic.gov.au)",
       "WebFetch(domain:www.bom.gov.au)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(sort:*)",
+      "Bash(ls:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)"
     ]
   }
 }
