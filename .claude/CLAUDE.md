@@ -12,6 +12,7 @@ the open community dataset used by Google Flood Hub to train its AI flood foreca
 ```
 fetch_maribyrnong.py   — streamflow CSVs from Melbourne Water + Victorian Water APIs
 fetch_era5land.py      — ERA5-Land variables via Google Earth Engine (full 1950+ range)
+compute_attributes.py  — Caravan climate indices (p_mean, PET, aridity, …) per official standard
 fetch_hydroatlas.py    — HydroATLAS basin attributes via GEE (use Caravan Colab notebook instead)
 fetch_catchments.py    — upstream catchment polygons via GEE → single ausvic_basin_shapes.shp
 write_netcdf.py        — converts merged CSVs → CF-1.8 netCDF4
@@ -45,6 +46,9 @@ Chifley Drive (230106A) is tidal — only 263 valid flow days above the tidal th
 - ERA5-Land fetched from **1950** (dataset start); pre-1950 rows have ERA5 cols = ""
 - SILO removed: not globally available (Caravan reviewer Feb 2026)
 - Missing data: empty string in CSV, `_FillValue = -9999` in netCDF
-- CSV has **35 columns**: date + streamflow + 33 ERA5-Land (no SILO)
+- CSV has **41 columns**: date + streamflow + 39 ERA5-Land
+  (10 instant vars × 3 + 2 accum flux vars × 3 + total_precip_sum + pet_era5_sum + pet_fao_pm_sum)
+- FAO-56 Penman-Monteith PET computed inline in `fetch_era5land.py` per Caravan `pet.py`
+- Climate indices in `attributes_caravan_ausvic.csv` computed over 1981–2020 per Caravan standard
 - Catchment areas from HydroATLAS `UP_AREA`, except Keilor (official Victorian Water figure: 1305.4 km²)
 - All data licensed CC-BY-4.0

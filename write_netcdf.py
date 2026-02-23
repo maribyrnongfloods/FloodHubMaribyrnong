@@ -50,6 +50,23 @@ VAR_META = {
     # ── ERA5-Land forcing (added by fetch_era5land.py) ────────────────────────
     # SILO columns have been removed per Caravan reviewer feedback (Feb 2026):
     # SILO is an Australian-only product; Caravan requires globally available data.
+    # ── 2m air temperature ────────────────────────────────────────────────────
+    "temperature_2m_mean": {
+        "units":      "degC",
+        "long_name":  "Daily mean 2-m air temperature (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "temperature_2m_min": {
+        "units":      "degC",
+        "long_name":  "Daily minimum 2-m air temperature (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "temperature_2m_max": {
+        "units":      "degC",
+        "long_name":  "Daily maximum 2-m air temperature (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    # ── 2m dewpoint temperature ───────────────────────────────────────────────
     "dewpoint_temperature_2m_mean": {
         "units":      "degC",
         "long_name":  "Daily mean 2-m dewpoint temperature (ERA5-Land)",
@@ -215,6 +232,22 @@ VAR_META = {
         "long_name":  "Daily maximum volumetric soil water layer 4 100-289 cm (ERA5-Land)",
         "_FillValue": -9999.0,
     },
+    # ── Precipitation and evaporation (daily totals) ──────────────────────────
+    "total_precipitation_sum": {
+        "units":      "mm/d",
+        "long_name":  "Daily total precipitation (ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
+    "potential_evaporation_sum_ERA5_LAND": {
+        "units":      "mm/d",
+        "long_name":  "Daily potential evaporation (ERA5-Land, original)",
+        "_FillValue": -9999.0,
+    },
+    "potential_evaporation_sum_FAO_PENMAN_MONTEITH": {
+        "units":      "mm/d",
+        "long_name":  "Daily reference ET (FAO-56 Penman-Monteith, computed from ERA5-Land)",
+        "_FillValue": -9999.0,
+    },
 }
 
 
@@ -325,10 +358,20 @@ def write_nc(gauge: dict, attrs: dict) -> Path:
         "Conventions":       "CF-1.8",
     }
 
-    # Merge any computed attributes from the attributes CSV
+    # Merge computed climate indices (from compute_attributes.py) and gauge
+    # metadata (from fetch_maribyrnong.py) into global netCDF attributes.
     if gid in attrs:
-        for key in ("p_mean", "pet_mean", "aridity", "streamflow_period",
-                    "streamflow_missing"):
+        caravan_keys = (
+            "p_mean", "pet_mean_ERA5_LAND", "pet_mean_FAO_PM",
+            "aridity_ERA5_LAND", "aridity_FAO_PM",
+            "frac_snow",
+            "moisture_index_ERA5_LAND", "seasonality_ERA5_LAND",
+            "moisture_index_FAO_PM",    "seasonality_FAO_PM",
+            "high_prec_freq", "high_prec_dur",
+            "low_prec_freq",  "low_prec_dur",
+            "streamflow_period", "streamflow_missing",
+        )
+        for key in caravan_keys:
             val = attrs[gid].get(key, "")
             if val:
                 ds.attrs[key] = val

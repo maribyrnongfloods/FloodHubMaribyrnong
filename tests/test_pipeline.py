@@ -12,6 +12,8 @@ Changes from original (Feb 2026 Caravan reviewer fixes):
   - Removed TestSafeFloat, TestDetectColumns, TestClimateSats (SILO removed)
   - Updated TestCaravanColumnNames: SILO cols gone, ERA5-Land cols tested
   - Added TestGaugeConfig: gauge ID format and count checks
+  - Updated column count to 41: date + streamflow + 39 ERA5-Land
+    (added temperature_2m ×3, total_precipitation_sum, PET ERA5, PET FAO PM)
 """
 
 import csv
@@ -86,6 +88,8 @@ class TestConvertUnits:
     def test_kelvin_to_celsius(self):
         assert convert_units("dewpoint_temperature_2m", 273.15) == pytest.approx(0.0)
         assert convert_units("dewpoint_temperature_2m", 300.0) == pytest.approx(26.85)
+        assert convert_units("temperature_2m", 273.15) == pytest.approx(0.0)
+        assert convert_units("temperature_2m", 293.15) == pytest.approx(20.0)
 
     def test_pascal_to_kilopascal(self):
         assert convert_units("surface_pressure", 101325.0) == pytest.approx(101.325)
@@ -117,19 +121,23 @@ class TestCaravanColumnNames:
 
     SILO columns have been removed (Feb 2026 reviewer feedback — SILO is
     Australian-only; Caravan requires globally available data).
-    CSV now has 35 columns: date + streamflow + 33 ERA5-Land.
+    CSV now has 41 columns: date + streamflow + 39 ERA5-Land:
+      - 10 instantaneous vars × 3 (mean/min/max) = 30
+      - 2  accumulated flux vars × 3             =  6
+      - total_precipitation_sum                  =  1
+      - potential_evaporation_sum_ERA5_LAND       =  1
+      - potential_evaporation_sum_FAO_PENMAN_MONTEITH = 1
     """
 
     ERA5_LAND_COLS = frozenset(ERA5_COLS)
 
+    # These are the SILO-specific column names that must NOT appear.
+    # temperature_2m_* and total_precipitation_sum are now legitimate ERA5-Land
+    # columns; only the truly SILO-only variables are banned.
     SILO_COLS = frozenset([
-        "total_precipitation_sum",
-        "temperature_2m_max",
-        "temperature_2m_min",
-        "temperature_2m_mean",
-        "potential_evaporation_sum",
-        "radiation_mj_m2_d",
-        "vapour_pressure_hpa",
+        "potential_evaporation_sum",   # Morton PET — SILO only (renamed in ERA5)
+        "radiation_mj_m2_d",           # SILO shortwave radiation
+        "vapour_pressure_hpa",         # SILO vapour pressure
     ])
 
     def _run_merge(self, n_era5_days: int = 10) -> set:
@@ -189,9 +197,9 @@ class TestCaravanColumnNames:
         assert not cols.intersection(old_names)
 
     def test_total_column_count(self):
-        # 35 cols: date + streamflow + 33 ERA5-Land
+        # 41 cols: date + streamflow + 39 ERA5-Land
         cols = self._run_merge()
-        assert len(cols) == 35, f"Expected 35 columns, got {len(cols)}"
+        assert len(cols) == 41, f"Expected 41 columns, got {len(cols)}"
 
     def test_era5_dates_form_spine(self):
         """Output CSV should have rows for all ERA5 dates, not just streamflow dates."""
