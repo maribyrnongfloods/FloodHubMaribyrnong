@@ -73,6 +73,31 @@ ACCUM_VARS = [
 ]
 
 
+# ── Unit converters ───────────────────────────────────────────────────────────
+
+_UNIT_CONVERTERS = {
+    "dewpoint_temperature_2m":       lambda v: v - 273.15,
+    "surface_pressure":              lambda v: v / 1000.0,
+    "u_component_of_wind_10m":       lambda v: v,
+    "v_component_of_wind_10m":       lambda v: v,
+    "snow_depth_water_equivalent":   lambda v: v * 1000.0,
+    "volumetric_soil_water_layer_1": lambda v: v,
+    "volumetric_soil_water_layer_2": lambda v: v,
+    "volumetric_soil_water_layer_3": lambda v: v,
+    "volumetric_soil_water_layer_4": lambda v: v,
+    "surface_net_solar_radiation":   lambda v: v / 3600.0,
+    "surface_net_thermal_radiation": lambda v: v / 3600.0,
+}
+
+
+def convert_units(var: str, value: float) -> float:
+    """Apply the ERA5-Land unit conversion for a base variable name."""
+    converter = _UNIT_CONVERTERS.get(var)
+    if converter is None:
+        raise KeyError(f"No unit converter registered for variable: {var!r}")
+    return converter(value)
+
+
 # ── GEE helpers ───────────────────────────────────────────────────────────────
 
 def init_gee():
