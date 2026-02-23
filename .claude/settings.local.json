@@ -27,7 +27,10 @@
       "Bash(ls:*)",
       "Bash(kill:*)",
       "Bash(pkill:*)",
-      "Bash(du -sh:*)"
+      "Bash(du -sh:*)",
+      "Bash(gh issue create:*)",
+      "Bash(where:*)",
+      "Bash(winget list:*)"
     ]
   }
 }

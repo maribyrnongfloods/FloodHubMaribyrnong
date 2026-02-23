@@ -2,6 +2,8 @@
 
 Contributing Maribyrnong River gauging stations to [Caravan](https://github.com/kratzert/Caravan) — a global community dataset for large-sample hydrology used by Google Flood Hub and hydrological ML research.
 
+**Dataset DOI:** [10.5281/zenodo.18736844](https://doi.org/10.5281/zenodo.18736844)
+
 ---
 
 ## Gauge Network (13 stations)
@@ -226,7 +228,19 @@ This dataset extension targets full compliance with the [Caravan](https://github
 | ESRI shapefile catchment boundaries | done |
 | CF-1.8 compliant netCDF4 | done |
 | CC-BY-4.0 license file | done |
-| Zenodo upload + GitHub issue | manual step |
+| Zenodo upload + GitHub issue | done |
+
+---
+
+## Submission Status
+
+| Item | Detail |
+|---|---|
+| Zenodo DOI | [10.5281/zenodo.18736844](https://doi.org/10.5281/zenodo.18736844) |
+| Zenodo zip | `caravan_maribyrnong_zenodo.zip` — 35.6 MB, 115 files |
+| GitHub issue | [kratzert/Caravan#51](https://github.com/kratzert/Caravan/issues/51) |
+
+Awaiting review from the Caravan maintainers. They may request minor adjustments to column names, metadata, or file structure before the dataset is merged into the official Caravan release.
 
 ---
 
