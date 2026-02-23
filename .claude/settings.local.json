@@ -26,7 +26,8 @@
       "Bash(sort:*)",
       "Bash(ls:*)",
       "Bash(kill:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(du -sh:*)"
     ]
   }
 }
