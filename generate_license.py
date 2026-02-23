@@ -2,7 +2,7 @@
 """
 generate_license.py
 
-Writes caravan_maribyrnong/licenses/aus_vic/license_aus_vic.md
+Writes caravan_maribyrnong/licenses/ausvic/license_ausvic.md
 
 This file is required by the Caravan contribution process.  It declares the
 data sources and the licence under which this dataset extension is released.
@@ -14,41 +14,41 @@ Usage
 
 from pathlib import Path
 
-LICENSE_DIR = Path("caravan_maribyrnong") / "licenses" / "aus_vic"
-LICENSE_PATH = LICENSE_DIR / "license_aus_vic.md"
+LICENSE_DIR  = Path("caravan_maribyrnong") / "licenses" / "ausvic"
+LICENSE_PATH = LICENSE_DIR / "license_ausvic.md"
 
 LICENSE_TEXT = """\
-# License — Caravan-AUS-VIC (Maribyrnong River)
+# License — Caravan-AUSVIC (Maribyrnong River)
 
 ## Dataset extension
 
-This dataset extension contributes streamflow and meteorological timeseries
-for 13 gauging stations across the Maribyrnong River catchment, Victoria,
-Australia, to the [Caravan](https://github.com/kratzert/Caravan) community
-dataset.
+This dataset extension contributes streamflow and ERA5-Land meteorological
+timeseries for 10 gauging stations across the Maribyrnong River catchment,
+Victoria, Australia, to the [Caravan](https://github.com/kratzert/Caravan)
+community dataset.
+
+Three gauges (230205, 230209, 230210) present in CAMELS AUS v2 are excluded
+to avoid duplicating records already in Caravan.
 
 ### Mainstem gauges (Melbourne Water API)
 
 | gauge_id | Station name | Station ID |
 |---|---|---|
-| aus_vic_230100 | Maribyrnong River at Darraweit | 230100A |
-| aus_vic_230211 | Maribyrnong River at Clarkefield | 230211A |
-| aus_vic_230104 | Maribyrnong River at Sunbury | 230104A |
-| aus_vic_230107 | Konagaderra Creek at Konagaderra | 230107A |
-| aus_vic_230200 | Maribyrnong River at Keilor | 230200 |
-| aus_vic_230106 | Maribyrnong River at Chifley Drive | 230106A |
+| ausvic_230100 | Maribyrnong River at Darraweit | 230100A |
+| ausvic_230211 | Maribyrnong River at Clarkefield | 230211A |
+| ausvic_230104 | Maribyrnong River at Sunbury | 230104A |
+| ausvic_230107 | Konagaderra Creek at Konagaderra | 230107A |
+| ausvic_230200 | Maribyrnong River at Keilor | 230200 |
+| ausvic_230106 | Maribyrnong River at Chifley Drive | 230106A |
 
 ### Tributary gauges (Victorian Water / Hydstra API)
 
 | gauge_id | Station name | Station ID |
 |---|---|---|
-| aus_vic_230210 | Jacksons Creek at Bullengarook | 230210 |
-| aus_vic_230206 | Jackson Creek at Gisborne | 230206 |
-| aus_vic_230202 | Jackson Creek at Sunbury | 230202 |
-| aus_vic_230205 | Deep Creek at Bulla | 230205 |
-| aus_vic_230209 | Barringo Creek at Barringo | 230209 |
-| aus_vic_230213 | Turritable Creek at Mount Macedon | 230213 |
-| aus_vic_230227 | Main Creek at Kerrie | 230227 |
+| ausvic_230206 | Jackson Creek at Gisborne | 230206 |
+| ausvic_230202 | Jackson Creek at Sunbury | 230202 |
+| ausvic_230213 | Turritable Creek at Mount Macedon | 230213 |
+| ausvic_230227 | Main Creek at Kerrie | 230227 |
 
 ---
 
@@ -71,8 +71,8 @@ Days below this threshold are absent from the timeseries.
 
 ---
 
-**Keilor and tributary stations (230200, 230210, 230206, 230202, 230205,
-230209, 230213, 230227) — Victorian Water Monitoring Information System**
+**Keilor and tributary stations (230200, 230206, 230202, 230213, 230227) —
+Victorian Water Monitoring Information System**
 
 Source: Victorian Water Monitoring Information System (WMIS)
 <https://data.water.vic.gov.au/>
@@ -87,32 +87,18 @@ https://creativecommons.org/licenses/by/4.0/)
 
 ## Meteorological forcing data
 
-**SILO DataDrill**
-
-Source: SILO DataDrill gridded climate dataset
-<https://www.longpaddock.qld.gov.au/silo/>
-
-Provider: Queensland Department of Environment and Science, via the
-Long Paddock service.
-
-Variables included: daily rainfall, maximum temperature, minimum temperature,
-Morton potential evapotranspiration, solar radiation, vapour pressure.
-
-Licence: [Creative Commons Attribution 4.0 International (CC BY 4.0)](
-https://creativecommons.org/licenses/by/4.0/)
-
----
-
 **ERA5-Land (ECMWF)**
 
-Source: ERA5-Land hourly data via Google Earth Engine
-<https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_LAND_HOURLY>
+Source: ERA5-Land daily aggregated data via Google Earth Engine
+<https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_LAND_DAILY_AGGR>
 
 Provider: European Centre for Medium-Range Weather Forecasts (ECMWF).
 
 Variables included: dewpoint temperature, surface net solar radiation,
 surface net thermal radiation, surface pressure, 10-m wind components (U and V),
 snow depth water equivalent, volumetric soil water layers 1–4.
+
+Coverage: 1950-01-01 to present (ERA5-Land dataset start).
 
 Licence: [Copernicus Climate Change Service (C3S) Licence](
 https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf)

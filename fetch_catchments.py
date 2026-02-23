@@ -38,7 +38,7 @@ from gauges_config import GAUGES
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 GEE_BASINS = "WWF/HydroSHEDS/v1/Basins/hybas_12"
-OUT_DIR    = Path("caravan_maribyrnong/shapefiles/aus_vic")
+OUT_DIR    = Path("caravan_maribyrnong/shapefiles/ausvic")
 
 
 # ── GEE helpers ───────────────────────────────────────────────────────────────
@@ -121,13 +121,11 @@ def trace_upstream(ee, lat: float, lon: float, gauge_id: str) -> dict:
     merged_info = merged.getInfo()
 
     # ── 4. Build GeoJSON feature ──────────────────────────────────────────
+    # Only gauge_id is required in the Caravan shapefile DBF.
     feature = {
         "type": "Feature",
         "properties": {
-            "gauge_id":        gauge_id,
-            "hybas_id_outlet": outlet_id,
-            "up_area_km2":     up_area,
-            "num_level12":     len(all_ids),
+            "gauge_id": gauge_id,
         },
         "geometry": merged_info["geometry"],
     }
@@ -185,7 +183,7 @@ def main():
         return
 
     # Save combined FeatureCollection (for GEE asset upload)
-    fc_path = OUT_DIR / "aus_vic_catchments.geojson"
+    fc_path = OUT_DIR / "ausvic_basin_shapes.geojson"
     fc = {
         "type":     "FeatureCollection",
         "features": all_features,
@@ -195,18 +193,16 @@ def main():
     gids = [f["properties"]["gauge_id"] for f in all_features]
 
     # ── Export as ESRI shapefile (required by Caravan) ────────────────────────
+    # Caravan requires a SINGLE combined shapefile named ausvic_basin_shapes.shp
+    # with only gauge_id as the DBF column. Individual per-gauge files are NOT
+    # included (reviewer requirement, Feb 2026).
     shp_written = False
     try:
         import geopandas as gpd
         gdf = gpd.read_file(str(fc_path))
-        shp_path = OUT_DIR / "aus_vic_catchments.shp"
-        gdf.to_file(str(shp_path))
-        # Also write individual shapefiles per gauge
-        for g in gids:
-            single = gdf[gdf["gauge_id"] == g]
-            if not single.empty:
-                single.to_file(str(OUT_DIR / f"{g}_catchment.shp"))
-        print(f"\n  Shapefile -> {OUT_DIR}/aus_vic_catchments.shp  (+ per-gauge .shp)")
+        shp_path = OUT_DIR / "ausvic_basin_shapes.shp"
+        gdf[["gauge_id", "geometry"]].to_file(str(shp_path))
+        print(f"\n  Shapefile -> {OUT_DIR}/ausvic_basin_shapes.shp")
         shp_written = True
     except ImportError:
         print("\n  NOTE: geopandas not installed — ESRI shapefile not written.")
@@ -217,25 +213,17 @@ def main():
 {'=' * 60}
  Catchment boundaries written ({len(all_features)} gauge(s)):
 
-   caravan_maribyrnong/shapefiles/
-     aus_vic_catchments.geojson          <- combined FeatureCollection
-""" + "\n".join(f"     {g}_catchment.geojson" for g in gids) + (f"""
-     aus_vic_catchments.shp              <- combined shapefile (Caravan format)
-""" if shp_written else "") + f"""
+   caravan_maribyrnong/shapefiles/ausvic/
+     ausvic_basin_shapes.geojson         <- combined FeatureCollection
+""" + (f"     ausvic_basin_shapes.shp             <- combined shapefile (Caravan format)\n" if shp_written else "") + f"""
 
  Next — upload shapefile to GEE as an asset:
    1. Go to  https://code.earthengine.google.com/
-   2. Assets tab → NEW → Shape files → upload aus_vic_catchments.shp
+   2. Assets tab → NEW → Shape files → upload ausvic_basin_shapes.shp
       (include the .dbf, .shx, .prj files in the same upload)
-   3. Note the asset path (e.g. users/YOUR_NAME/aus_vic_catchments)
+   3. Note the asset path (e.g. users/YOUR_NAME/ausvic_basin_shapes)
    4. Use that asset path in the Caravan ERA5-Land GEE notebooks to
       spatially average forcing data over these catchment polygons.
-
- Area check: compare the up_area_km2 field in each GeoJSON with the
- known catchment area in gauges_config.py.  A difference > 15% may
- indicate the gauge is near a confluence and the outlet basin cell
- captures a different sub-basin -- inspect the geometry in GEE Code
- Editor before proceeding.
 {'=' * 60}
 """)
 

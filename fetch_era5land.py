@@ -23,7 +23,6 @@ Adds the variables that SILO DataDrill does not provide:
 
 Must be run after:
     python fetch_maribyrnong.py
-    python fetch_silo_met.py --username your@email.com
 
 Requirements:
     pip install earthengine-api
@@ -47,7 +46,7 @@ from gauges_config import GAUGES
 # ── Paths ──────────────────────────────────────────────────────────────────────
 
 OUT_DIR = Path("caravan_maribyrnong")
-TS_DIR  = OUT_DIR / "timeseries" / "csv" / "aus_vic"
+TS_DIR  = OUT_DIR / "timeseries" / "csv" / "ausvic"
 
 # ERA5-Land coverage starts 1950; fetch from 1950 to maximise overlap with
 # long-record gauges (e.g. Keilor 230200 which starts 1908).
@@ -275,45 +274,61 @@ ERA5_COLS = (
 
 
 def merge_era5land(gauge: dict, era5_by_date: dict[str, dict]) -> None:
-    """Merge ERA5-Land columns into the existing timeseries CSV for one gauge."""
+    """
+    Rebuild the timeseries CSV so it covers the full ERA5-Land period (1950+).
+
+    Rows are produced for every date in era5_by_date (entire 1950-present range).
+    Streamflow values are merged in from the existing CSV where available.
+    Pre-1950 streamflow dates (e.g. Keilor 1908-1949) are appended as rows
+    with ERA5-Land columns left empty.
+
+    This ensures meteorological forcings exist for the full date range, not
+    just the period that overlaps with streamflow records (Caravan requirement).
+    """
     gid     = gauge["gauge_id"]
     ts_path = TS_DIR / f"{gid}.csv"
 
-    if not ts_path.exists():
-        print(f"    ERROR: {ts_path} not found -- run fetch_maribyrnong.py first.")
-        return
+    # Load existing streamflow keyed by ISO date
+    sf_by_date: dict[str, str] = {}
+    if ts_path.exists():
+        with open(ts_path, newline="") as f:
+            for row in csv.DictReader(f):
+                sf_by_date[row["date"]] = row.get("streamflow", "")
 
-    with open(ts_path, newline="") as f:
-        flow_rows = list(csv.DictReader(f))
+    all_cols = ["date", "streamflow"] + ERA5_COLS
+    era5_dates = set(era5_by_date.keys())
 
-    if not flow_rows:
-        print("    WARNING: timeseries CSV is empty.")
-        return
-
-    # Build output column list; ERA5 cols are added if not already present
-    existing_cols = list(flow_rows[0].keys())
-    all_cols      = existing_cols + [c for c in ERA5_COLS if c not in existing_cols]
-
+    # ── 1. ERA5 spine (1950+): streamflow merged in where available ───────────
     matched = 0
-    merged  = []
-    for row in flow_rows:
-        era5 = era5_by_date.get(row["date"], {})
-        if era5:
+    merged: list[dict] = []
+    for date_str in sorted(era5_dates):
+        era5 = era5_by_date[date_str]
+        sf   = sf_by_date.get(date_str, "")
+        if sf:
             matched += 1
-        new_row = dict(row)
-        # Always overwrite all ERA5 cols so re-runs fill previously empty slots
+        new_row = {"date": date_str, "streamflow": sf}
         for col in ERA5_COLS:
             val = era5.get(col)
             new_row[col] = "" if val is None else val
         merged.append(new_row)
 
-    print(f"    Rows matched with ERA5-Land: {matched} / {len(flow_rows)}")
+    # ── 2. Pre-ERA5 streamflow rows (e.g. Keilor 1908-1949) ──────────────────
+    pre_era5 = [
+        {"date": d, "streamflow": sf, **{c: "" for c in ERA5_COLS}}
+        for d, sf in sorted(sf_by_date.items())
+        if d not in era5_dates and sf
+    ]
+    merged = pre_era5 + merged   # pre-1950 first, then 1950+ (already sorted)
+
+    print(f"    Streamflow days matched with ERA5: {matched} / {len(sf_by_date)}")
+    print(f"    Pre-ERA5 streamflow rows: {len(pre_era5)}")
+    print(f"    Total rows in output CSV: {len(merged)}")
 
     with open(ts_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=all_cols)
         writer.writeheader()
         writer.writerows(merged)
-    print(f"    Timeseries updated -> {ts_path}")
+    print(f"    Timeseries written -> {ts_path}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────

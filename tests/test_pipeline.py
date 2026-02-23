@@ -7,13 +7,18 @@ No API calls — all tests use synthetic data.
 Run with:
     pip install pytest
     pytest tests/
+
+Changes from original (Feb 2026 Caravan reviewer fixes):
+  - Removed TestSafeFloat, TestDetectColumns, TestClimateSats (SILO removed)
+  - Updated TestCaravanColumnNames: SILO cols gone, ERA5-Land cols tested
+  - Added TestGaugeConfig: gauge ID format and count checks
 """
 
 import csv
-import io
-import sys
 import tempfile
+from datetime import date, timedelta
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -21,8 +26,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fetch_maribyrnong import ml_day_to_mm_day, deduplicate
-from fetch_silo_met import safe_float, detect_columns
-from fetch_era5land import convert_units
+from fetch_era5land import convert_units, ERA5_COLS, merge_era5land
 
 
 # ── fetch_maribyrnong ─────────────────────────────────────────────────────────
@@ -76,63 +80,6 @@ class TestDeduplicate:
         assert result == rows
 
 
-# ── fetch_silo_met ────────────────────────────────────────────────────────────
-
-class TestSafeFloat:
-    def test_valid_number(self):
-        assert safe_float("3.14") == pytest.approx(3.14)
-
-    def test_integer_string(self):
-        assert safe_float("42") == pytest.approx(42.0)
-
-    def test_empty_string(self):
-        assert safe_float("") is None
-
-    def test_none_input(self):
-        assert safe_float(None) is None
-
-    def test_missing_value_sentinel(self):
-        # Values <= -999 are treated as missing
-        assert safe_float("-999.9") is None
-        assert safe_float("-1000") is None
-
-    def test_negative_valid(self):
-        # Values > -999 are valid (e.g. negative temperatures)
-        assert safe_float("-5.0") == pytest.approx(-5.0)
-
-    def test_non_numeric(self):
-        assert safe_float("N/A") is None
-
-
-class TestDetectColumns:
-    def test_exact_match(self):
-        fields = ["Date", "daily_rain", "max_temp", "min_temp",
-                  "et_morton_pot", "radiation", "vp"]
-        result = detect_columns(fields)
-        assert result["daily_rain"] == "daily_rain"
-        assert result["max_temp"] == "max_temp"
-        assert result["et_morton_pot"] == "et_morton_pot"
-
-    def test_alias_match(self):
-        # SILO sometimes uses alternate column names
-        fields = ["Date", "rain", "maximum_temperature", "minimum_temperature",
-                  "et_morton_potential", "solar_radiation", "vapour_pressure"]
-        result = detect_columns(fields)
-        assert result["daily_rain"] == "rain"
-        assert result["max_temp"] == "maximum_temperature"
-        assert result["et_morton_pot"] == "et_morton_potential"
-
-    def test_missing_column_returns_none(self):
-        result = detect_columns(["Date", "daily_rain"])
-        assert result["max_temp"] is None
-
-    def test_all_canonical_keys_present(self):
-        result = detect_columns([])
-        expected_keys = {"daily_rain", "max_temp", "min_temp",
-                         "et_morton_pot", "radiation", "vp"}
-        assert set(result.keys()) == expected_keys
-
-
 # ── fetch_era5land ────────────────────────────────────────────────────────────
 
 class TestConvertUnits:
@@ -161,123 +108,21 @@ class TestConvertUnits:
             assert convert_units(var, 0.35) == pytest.approx(0.35)
 
 
-# ── Climate stats (tested via merge_gauge with synthetic data) ────────────────
-
-class TestClimateSats:
-    """
-    Tests climate statistics calculated inside merge_gauge() by running it
-    with a synthetic timeseries CSV and SILO rows.
-    """
-
-    def _make_silo_rows(self, n_days: int, rain: float, pet: float) -> list[dict]:
-        """Create synthetic SILO rows with constant rain and PET."""
-        from datetime import date, timedelta
-        rows = []
-        start = date(2000, 1, 1)
-        for i in range(n_days):
-            d = start + timedelta(days=i)
-            rows.append({
-                "Date": d.strftime("%Y%m%d"),
-                "daily_rain": str(rain),
-                "max_temp": "25.0",
-                "min_temp": "15.0",
-                "et_morton_pot": str(pet),
-                "radiation": "20.0",
-                "vp": "12.0",
-            })
-        return rows
-
-    def _run_merge(self, rain: float, pet: float, n_days: int = 365) -> dict | None:
-        """Run merge_gauge with synthetic data and return climate stats."""
-        from datetime import date, timedelta
-        from fetch_silo_met import merge_gauge
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ts_dir = Path(tmpdir) / "timeseries" / "csv" / "aus_vic"
-            ts_dir.mkdir(parents=True)
-
-            # Write synthetic streamflow CSV
-            ts_path = ts_dir / "test_gauge.csv"
-            with open(ts_path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["date", "streamflow"])
-                start = date(2000, 1, 1)
-                for i in range(n_days):
-                    d = start + timedelta(days=i)
-                    writer.writerow([d.isoformat(), "1.0"])
-
-            # Patch TS_DIR to point to tmpdir
-            import fetch_silo_met as fsm
-            original = fsm.TS_DIR
-            fsm.TS_DIR = ts_dir
-
-            gauge = {"gauge_id": "test_gauge"}
-            silo_rows = self._make_silo_rows(n_days, rain, pet)
-            result = merge_gauge(gauge, silo_rows)
-
-            fsm.TS_DIR = original
-            return result
-
-    def test_p_mean(self):
-        result = self._run_merge(rain=5.0, pet=4.0)
-        assert result is not None
-        assert result["p_mean"] == pytest.approx(5.0, abs=1e-3)
-
-    def test_pet_mean(self):
-        result = self._run_merge(rain=5.0, pet=4.0)
-        assert result["pet_mean"] == pytest.approx(4.0, abs=1e-3)
-
-    def test_aridity(self):
-        # aridity = PET/P
-        result = self._run_merge(rain=4.0, pet=8.0)
-        assert result["aridity"] == pytest.approx(2.0, abs=1e-3)
-
-    def test_frac_snow_zero(self):
-        # Victoria — always 0
-        result = self._run_merge(rain=5.0, pet=4.0)
-        assert result["frac_snow"] == 0.0
-
-    def test_moisture_index_dry(self):
-        # PET >> P → MI close to +1
-        result = self._run_merge(rain=1.0, pet=10.0)
-        # MI = (PET-P)/(PET+P) = 9/11 ≈ 0.818
-        assert result["moisture_index"] == pytest.approx(9 / 11, abs=1e-2)
-
-    def test_moisture_index_wet(self):
-        # P >> PET → MI close to -1
-        result = self._run_merge(rain=10.0, pet=1.0)
-        # MI = (1-10)/(1+10) = -9/11 ≈ -0.818
-        assert result["moisture_index"] == pytest.approx(-9 / 11, abs=1e-2)
-
-    def test_low_prec_freq_all_dry(self):
-        # All days < 1 mm → low_prec_freq = 1.0
-        result = self._run_merge(rain=0.5, pet=2.0)
-        assert result["low_prec_freq"] == pytest.approx(1.0)
-
-    def test_high_prec_freq_all_normal(self):
-        # Constant rain = mean → no day exceeds 5×mean → 0
-        result = self._run_merge(rain=5.0, pet=4.0)
-        assert result["high_prec_freq"] == pytest.approx(0.0)
-
-    def test_result_has_all_required_keys(self):
-        result = self._run_merge(rain=3.0, pet=4.0)
-        required = {
-            "gauge_id", "p_mean", "pet_mean", "aridity", "frac_snow",
-            "moisture_index", "moisture_index_seasonality",
-            "high_prec_freq", "high_prec_dur",
-            "low_prec_freq", "low_prec_dur",
-        }
-        assert required.issubset(set(result.keys()))
-
-
 # ── Output column names (Caravan compliance) ──────────────────────────────────
 
 class TestCaravanColumnNames:
-    """Verify that output CSV column names match the Caravan specification."""
+    """
+    Verify that the timeseries CSV column names match the Caravan specification
+    after merge_era5land() rewrites the file.
 
-    REQUIRED_TIMESERIES_COLS = {
-        "date",
-        "streamflow",
+    SILO columns have been removed (Feb 2026 reviewer feedback — SILO is
+    Australian-only; Caravan requires globally available data).
+    CSV now has 35 columns: date + streamflow + 33 ERA5-Land.
+    """
+
+    ERA5_LAND_COLS = frozenset(ERA5_COLS)
+
+    SILO_COLS = frozenset([
         "total_precipitation_sum",
         "temperature_2m_max",
         "temperature_2m_min",
@@ -285,111 +130,136 @@ class TestCaravanColumnNames:
         "potential_evaporation_sum",
         "radiation_mj_m2_d",
         "vapour_pressure_hpa",
-    }
+    ])
 
-    REQUIRED_CARAVAN_ATTR_COLS = {
-        "gauge_id", "p_mean", "pet_mean", "aridity", "frac_snow",
-        "moisture_index", "moisture_index_seasonality",
-        "high_prec_freq", "high_prec_dur",
-        "low_prec_freq", "low_prec_dur",
-    }
-
-    REQUIRED_OTHER_ATTR_COLS = {
-        "gauge_id", "gauge_name", "gauge_lat", "gauge_lon",
-        "country", "area", "streamflow_period", "streamflow_missing",
-    }
-
-    def _merge_output_cols(self, rain: float = 3.0, pet: float = 4.0,
-                           n_days: int = 365) -> list[str]:
-        """Return column names from the timeseries CSV after a SILO merge."""
-        from datetime import date, timedelta
-        from fetch_silo_met import merge_gauge
-
+    def _run_merge(self, n_era5_days: int = 10) -> set:
+        """Run merge_era5land with synthetic data; return set of output column names."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            ts_dir = Path(tmpdir) / "timeseries" / "csv" / "aus_vic"
+            ts_dir = Path(tmpdir) / "timeseries" / "csv" / "ausvic"
             ts_dir.mkdir(parents=True)
             ts_path = ts_dir / "test_gauge.csv"
 
+            # Minimal streamflow CSV — one date in the ERA5 range
             with open(ts_path, "w", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(["date", "streamflow"])
-                start = date(2000, 1, 1)
-                for i in range(n_days):
-                    d = start + timedelta(days=i)
-                    writer.writerow([d.isoformat(), "1.0"])
+                writer.writerow(["2000-01-05", "1.23"])
 
-            silo_rows = []
+            # Synthetic ERA5-Land data
             start = date(2000, 1, 1)
-            for i in range(n_days):
-                d = start + timedelta(days=i)
-                silo_rows.append({
-                    "Date": d.strftime("%Y%m%d"),
-                    "daily_rain": str(rain),
-                    "max_temp": "25.0",
-                    "min_temp": "15.0",
-                    "et_morton_pot": str(pet),
-                    "radiation": "20.0",
-                    "vp": "12.0",
-                })
+            era5_by_date = {}
+            for i in range(n_era5_days):
+                d = (start + timedelta(days=i)).isoformat()
+                rec = {"date": d}
+                for col in ERA5_COLS:
+                    rec[col] = 0.1
+                era5_by_date[d] = rec
 
-            import fetch_silo_met as fsm
-            original = fsm.TS_DIR
-            fsm.TS_DIR = ts_dir
-            merge_gauge({"gauge_id": "test_gauge"}, silo_rows)
-            fsm.TS_DIR = original
+            import fetch_era5land as fe5
+            original_ts = fe5.TS_DIR
+            fe5.TS_DIR = ts_dir
+            merge_era5land({"gauge_id": "test_gauge"}, era5_by_date)
+            fe5.TS_DIR = original_ts
 
             with open(ts_path, newline="") as f:
-                return list(csv.DictReader(f))[0].keys()
+                rows = list(csv.DictReader(f))
+            return set(rows[0].keys()) if rows else set()
 
-    def test_timeseries_has_required_columns(self):
-        cols = set(self._merge_output_cols())
-        assert self.REQUIRED_TIMESERIES_COLS.issubset(cols), (
-            f"Missing columns: {self.REQUIRED_TIMESERIES_COLS - cols}"
+    def test_timeseries_has_all_era5land_columns(self):
+        cols = self._run_merge()
+        assert self.ERA5_LAND_COLS.issubset(cols), (
+            f"Missing ERA5-Land columns: {self.ERA5_LAND_COLS - cols}"
+        )
+
+    def test_timeseries_has_date_and_streamflow(self):
+        cols = self._run_merge()
+        assert "date" in cols
+        assert "streamflow" in cols
+
+    def test_no_silo_columns(self):
+        cols = self._run_merge()
+        present_silo = cols & self.SILO_COLS
+        assert not present_silo, (
+            f"SILO columns must be removed per Caravan reviewer: {present_silo}"
         )
 
     def test_no_old_column_names(self):
-        cols = set(self._merge_output_cols())
+        cols = self._run_merge()
         old_names = {"streamflow_mmd", "precipitation_mmd", "pet_mmd"}
-        assert not cols.intersection(old_names), (
-            f"Old column names still present: {cols.intersection(old_names)}"
-        )
+        assert not cols.intersection(old_names)
 
-    def test_caravan_attr_keys(self):
-        from datetime import date, timedelta
-        from fetch_silo_met import merge_gauge
+    def test_total_column_count(self):
+        # 35 cols: date + streamflow + 33 ERA5-Land
+        cols = self._run_merge()
+        assert len(cols) == 35, f"Expected 35 columns, got {len(cols)}"
 
+    def test_era5_dates_form_spine(self):
+        """Output CSV should have rows for all ERA5 dates, not just streamflow dates."""
+        n = 10
+        cols_unused = self._run_merge(n_era5_days=n)  # triggers the merge
+        # Re-run and count rows
         with tempfile.TemporaryDirectory() as tmpdir:
-            ts_dir = Path(tmpdir) / "timeseries" / "csv" / "aus_vic"
+            ts_dir = Path(tmpdir) / "timeseries" / "csv" / "ausvic"
             ts_dir.mkdir(parents=True)
             ts_path = ts_dir / "test_gauge.csv"
-
-            n_days = 365
             with open(ts_path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["date", "streamflow"])
-                start = date(2000, 1, 1)
-                for i in range(n_days):
-                    d = start + timedelta(days=i)
-                    writer.writerow([d.isoformat(), "1.0"])
-
-            silo_rows = []
+                csv.writer(f).writerow(["date", "streamflow"])
+                csv.writer(f).writerow(["2000-01-05", "1.0"])
             start = date(2000, 1, 1)
-            for i in range(n_days):
-                d = start + timedelta(days=i)
-                silo_rows.append({
-                    "Date": d.strftime("%Y%m%d"),
-                    "daily_rain": "3.0", "max_temp": "25.0",
-                    "min_temp": "15.0", "et_morton_pot": "4.0",
-                    "radiation": "20.0", "vp": "12.0",
-                })
+            era5_by_date = {
+                (start + timedelta(days=i)).isoformat(): {
+                    "date": (start + timedelta(days=i)).isoformat(),
+                    **{col: 0.1 for col in ERA5_COLS}
+                }
+                for i in range(n)
+            }
+            import fetch_era5land as fe5
+            orig = fe5.TS_DIR
+            fe5.TS_DIR = ts_dir
+            merge_era5land({"gauge_id": "test_gauge"}, era5_by_date)
+            fe5.TS_DIR = orig
+            with open(ts_path, newline="") as f:
+                row_count = sum(1 for _ in csv.DictReader(f))
+        assert row_count == n, f"Expected {n} rows (ERA5 spine), got {row_count}"
 
-            import fetch_silo_met as fsm
-            original = fsm.TS_DIR
-            fsm.TS_DIR = ts_dir
-            result = merge_gauge({"gauge_id": "test_gauge"}, silo_rows)
-            fsm.TS_DIR = original
 
-        assert result is not None
-        assert self.REQUIRED_CARAVAN_ATTR_COLS.issubset(set(result.keys())), (
-            f"Missing keys: {self.REQUIRED_CARAVAN_ATTR_COLS - set(result.keys())}"
+# ── Gauge configuration ───────────────────────────────────────────────────────
+
+class TestGaugeConfig:
+    """Verify gauge_id format and count after Caravan reviewer changes."""
+
+    def test_gauge_id_format(self):
+        """All gauge IDs must be ausvic_XXXXXX (exactly two parts on _ split)."""
+        from gauges_config import GAUGES
+        for g in GAUGES:
+            parts = g["gauge_id"].split("_")
+            assert len(parts) == 2, (
+                f"gauge_id {g['gauge_id']!r} has {len(parts)} parts — must be exactly 2"
+            )
+            assert parts[0] == "ausvic", (
+                f"gauge_id {g['gauge_id']!r} must start with 'ausvic', not '{parts[0]}'"
+            )
+
+    def test_gauge_count(self):
+        """Extension must have exactly 10 gauges (3 removed as CAMELS AUS v2 duplicates)."""
+        from gauges_config import GAUGES
+        assert len(GAUGES) == 10, (
+            f"Expected 10 gauges, got {len(GAUGES)}"
         )
+
+    def test_excluded_gauges_absent(self):
+        """Stations 230205, 230209, 230210 must not appear (in CAMELS AUS v2)."""
+        from gauges_config import GAUGES
+        ids = {g["station_id"] for g in GAUGES}
+        for excluded in ("230205", "230209", "230210"):
+            assert excluded not in ids, (
+                f"Station {excluded} is in CAMELS AUS v2 and must be excluded"
+            )
+
+    def test_all_gauges_have_area(self):
+        from gauges_config import GAUGES
+        for g in GAUGES:
+            assert g["area_km2"] is not None, (
+                f"area_km2 not set for {g['gauge_id']}"
+            )
+            assert g["area_km2"] > 0

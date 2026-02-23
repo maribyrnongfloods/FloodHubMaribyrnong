@@ -14,13 +14,13 @@ Usage:
 
 Output structure:
     caravan_maribyrnong/
-        timeseries/csv/aus_vic/
-            aus_vic_230200.csv
-            aus_vic_230106.csv
-        attributes/
-            attributes_other_aus_vic.csv   ← gauge metadata (this script)
-            attributes_caravan_aus_vic.csv ← climate stats (fetch_silo_met.py)
-            attributes_hydroatlas_aus_vic.csv ← basin attrs (fetch_hydroatlas.py)
+        timeseries/csv/ausvic/
+            ausvic_230200.csv
+            ausvic_230106.csv
+        attributes/ausvic/
+            attributes_other_ausvic.csv   ← gauge metadata (this script)
+            attributes_caravan_ausvic.csv ← climate stats (Caravan Part-2 notebook)
+            attributes_hydroatlas_ausvic.csv ← basin attrs (fetch_hydroatlas.py)
 """
 
 import json
@@ -34,8 +34,8 @@ from gauges_config import GAUGES
 
 # ── Output paths ──────────────────────────────────────────────────────────────
 OUT_DIR   = Path("caravan_maribyrnong")
-TS_DIR    = OUT_DIR / "timeseries" / "csv" / "aus_vic"
-ATTR_DIR  = OUT_DIR / "attributes" / "aus_vic"
+TS_DIR    = OUT_DIR / "timeseries" / "csv" / "ausvic"
+ATTR_DIR  = OUT_DIR / "attributes" / "ausvic"
 
 # ── Hydstra API ───────────────────────────────────────────────────────────────
 HYDSTRA_BASE = "https://data.water.vic.gov.au/cgi/webservice.exe"
@@ -306,7 +306,7 @@ def main():
     # ── Write attributes_other CSV (gauge metadata) ───────────────────────────
     if attr_rows:
         import csv
-        attr_path = ATTR_DIR / "attributes_other_aus_vic.csv"
+        attr_path = ATTR_DIR / "attributes_other_ausvic.csv"
         with open(attr_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=attr_fields)
             writer.writeheader()
@@ -316,9 +316,8 @@ def main():
     print(f"""
 {'=' * 60}
  Done. Next steps:
-   python fetch_silo_met.py --username your@email.com
    python fetch_era5land.py
-   python fetch_hydroatlas.py
+   python fetch_hydroatlas.py  (then replace with official Caravan Colab notebook)
 {'=' * 60}
 """)
 

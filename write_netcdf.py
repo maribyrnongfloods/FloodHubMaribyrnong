@@ -3,18 +3,17 @@
 write_netcdf.py
 
 Reads the merged timeseries CSVs produced by fetch_maribyrnong.py +
-fetch_silo_met.py and writes Caravan-format netCDF4 files, one per gauge.
+fetch_era5land.py and writes Caravan-format netCDF4 files, one per gauge.
 
 Must be run AFTER:
     python fetch_maribyrnong.py
-    python fetch_silo_met.py --username your@email.com
     python fetch_era5land.py
 
 Output structure:
     caravan_maribyrnong/
-        timeseries/netcdf/aus_vic/
-            aus_vic_230200.nc
-            aus_vic_230106.nc
+        timeseries/netcdf/ausvic/
+            ausvic_230200.nc
+            ausvic_230106.nc
 
 Requirements
 ------------
@@ -34,10 +33,10 @@ from gauges_config import GAUGES
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 OUT_DIR          = Path("caravan_maribyrnong")
-CSV_DIR          = OUT_DIR / "timeseries" / "csv"    / "aus_vic"
-NETCDF_DIR       = OUT_DIR / "timeseries" / "netcdf" / "aus_vic"
-CARAVAN_ATTR     = OUT_DIR / "attributes" / "aus_vic" / "attributes_caravan_aus_vic.csv"
-OTHER_ATTR       = OUT_DIR / "attributes" / "aus_vic" / "attributes_other_aus_vic.csv"
+CSV_DIR          = OUT_DIR / "timeseries" / "csv"    / "ausvic"
+NETCDF_DIR       = OUT_DIR / "timeseries" / "netcdf" / "ausvic"
+CARAVAN_ATTR     = OUT_DIR / "attributes" / "ausvic" / "attributes_caravan_ausvic.csv"
+OTHER_ATTR       = OUT_DIR / "attributes" / "ausvic" / "attributes_other_ausvic.csv"
 
 # ── Variable metadata (units + long names for netCDF attributes) ───────────────
 
@@ -48,43 +47,9 @@ VAR_META = {
         "long_name":  "Observed daily streamflow (depth over catchment area)",
         "_FillValue": -9999.0,
     },
-    # ── SILO DataDrill meteorological forcing ─────────────────────────────────
-    "total_precipitation_sum": {
-        "units":      "mm/d",
-        "long_name":  "Daily precipitation (SILO DataDrill)",
-        "_FillValue": -9999.0,
-    },
-    "temperature_2m_max": {
-        "units":      "degC",
-        "long_name":  "Daily maximum 2-m air temperature (SILO DataDrill)",
-        "_FillValue": -9999.0,
-    },
-    "temperature_2m_min": {
-        "units":      "degC",
-        "long_name":  "Daily minimum 2-m air temperature (SILO DataDrill)",
-        "_FillValue": -9999.0,
-    },
-    "temperature_2m_mean": {
-        "units":      "degC",
-        "long_name":  "Daily mean 2-m air temperature (SILO DataDrill, average of max+min)",
-        "_FillValue": -9999.0,
-    },
-    "potential_evaporation_sum": {
-        "units":      "mm/d",
-        "long_name":  "Potential evapotranspiration — Morton method (SILO DataDrill)",
-        "_FillValue": -9999.0,
-    },
-    "radiation_mj_m2_d": {
-        "units":      "MJ/m2/d",
-        "long_name":  "Daily incoming solar radiation (SILO DataDrill)",
-        "_FillValue": -9999.0,
-    },
-    "vapour_pressure_hpa": {
-        "units":      "hPa",
-        "long_name":  "Daily vapour pressure (SILO DataDrill)",
-        "_FillValue": -9999.0,
-    },
     # ── ERA5-Land forcing (added by fetch_era5land.py) ────────────────────────
+    # SILO columns have been removed per Caravan reviewer feedback (Feb 2026):
+    # SILO is an Australian-only product; Caravan requires globally available data.
     "dewpoint_temperature_2m_mean": {
         "units":      "degC",
         "long_name":  "Daily mean 2-m dewpoint temperature (ERA5-Land)",
@@ -353,8 +318,7 @@ def write_nc(gauge: dict, attrs: dict) -> Path:
             else f"Victorian Water Monitoring (data.water.vic.gov.au), "
                  f"Station {gauge['station_id']}"
         ),
-        "met_source":        ("SILO DataDrill (www.longpaddock.qld.gov.au/silo/); "
-                             "ERA5-Land via Google Earth Engine (ECMWF/ERA5_LAND/HOURLY)"),
+        "met_source":        "ERA5-Land via Google Earth Engine (ECMWF/ERA5_LAND/DAILY_AGGR)",
         "license":           "CC-BY-4.0",
         "notes":             gauge.get("notes", ""),
         "created":           datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),

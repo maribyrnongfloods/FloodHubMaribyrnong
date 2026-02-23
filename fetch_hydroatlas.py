@@ -18,7 +18,13 @@ Usage:
     python fetch_hydroatlas.py
 
 Output:
-    caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv
+    caravan_maribyrnong/attributes/ausvic/attributes_hydroatlas_ausvic.csv
+
+NOTE: The reviewer (Kratzert) requires HydroATLAS attributes to be derived
+using the official Caravan Part-1 Colab notebook, NOT this custom script:
+  https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
+This script produces more columns than the standard. Run the Colab notebook
+instead, then replace the output here.
 
 If you prefer not to use GEE, see the fallback at the bottom of this file
 for instructions on using the downloaded shapefile with geopandas instead.
@@ -35,7 +41,7 @@ from gauges_config import GAUGES
 # GEE asset — HydroATLAS BasinATLAS level 12 (finest resolution)
 GEE_ASSET = "WWF/HydroATLAS/v1/Basins/level12"
 
-OUT_PATH  = Path("caravan_maribyrnong/attributes/aus_vic/attributes_hydroatlas_aus_vic.csv")
+OUT_PATH  = Path("caravan_maribyrnong/attributes/ausvic/attributes_hydroatlas_ausvic.csv")
 
 
 # ── GEE query ─────────────────────────────────────────────────────────────────
@@ -200,17 +206,12 @@ def main():
 {'=' * 60}
  HydroATLAS extraction complete ({len(attr_rows)} gauge(s)).
 
- All three Caravan attribute files are now ready:
-   attributes_caravan_aus_vic.csv     <- core attributes
-   attributes_hydroatlas_aus_vic.csv  <- HydroATLAS (just written)
-
- Caravan submission checklist:
-   [x] fetch_maribyrnong.py  (streamflow timeseries)
-   [x] fetch_silo_met.py     (met data + climate attributes)
-   [x] fetch_hydroatlas.py   (this script)
-   [ ] Fork https://github.com/kratzert/Caravan
-   [ ] Copy caravan_maribyrnong/ into the repo structure
-   [ ] Open a pull request
+ HydroATLAS raw JSON written for each gauge.
+ IMPORTANT: Do NOT use attributes_hydroatlas_ausvic.csv from this script for
+ the Caravan submission. Instead run the official Caravan Part-1 Colab notebook:
+   https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
+ That notebook produces exactly the standard HydroATLAS columns used across
+ all Caravan subdatasets (< 5 minutes in Colab).
 {'=' * 60}
 """)
 
