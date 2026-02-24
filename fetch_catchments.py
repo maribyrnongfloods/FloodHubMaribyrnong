@@ -121,10 +121,9 @@ def trace_upstream(ee, lat: float, lon: float, gauge_id: str) -> dict:
     merged_info = merged.getInfo()
 
     # ── 4. Build GeoJSON feature ──────────────────────────────────────────
-    # Only gauge_id is required in the Caravan shapefile DBF.
-    # up_area_km2 is kept in GeoJSON for the area sanity-check in main();
-    # the shapefile writer uses gdf[["gauge_id","geometry"]] so it is stripped
-    # from the .shp/.dbf output automatically.
+    # Only gauge_id is required in Caravan. up_area_km2 is included here so
+    # main() can do an area sanity-check; it is stripped before writing the
+    # GeoJSON and shapefile outputs (gauge_id only in both).
     feature = {
         "type": "Feature",
         "properties": {
@@ -181,11 +180,19 @@ def main():
         print("\nNo catchments processed - check lat/lon in gauges_config.py")
         return
 
-    # Save combined FeatureCollection (for GEE asset upload)
+    # Save combined FeatureCollection (for GEE asset upload).
+    # Strip up_area_km2 — GeoJSON must contain only gauge_id, matching the
+    # Caravan standard (same as the shapefile DBF).
     fc_path = OUT_DIR / "ausvic_basin_shapes.geojson"
+    clean_features = [
+        {"type": "Feature",
+         "properties": {"gauge_id": f["properties"]["gauge_id"]},
+         "geometry": f["geometry"]}
+        for f in all_features
+    ]
     fc = {
         "type":     "FeatureCollection",
-        "features": all_features,
+        "features": clean_features,
     }
     fc_path.write_text(json.dumps(fc, indent=2))
 

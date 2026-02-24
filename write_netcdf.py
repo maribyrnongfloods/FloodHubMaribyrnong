@@ -311,7 +311,7 @@ def write_nc(gauge: dict, attrs: dict) -> Path:
     if not csv_path.exists():
         raise FileNotFoundError(
             f"Timeseries CSV not found: {csv_path}\n"
-            "Run fetch_maribyrnong.py and fetch_silo_met.py first."
+            "Run fetch_maribyrnong.py and fetch_era5land.py first."
         )
 
     dates, data_cols = read_csv(csv_path)
