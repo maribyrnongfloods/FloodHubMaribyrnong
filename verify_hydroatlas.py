@@ -2,8 +2,16 @@
 """
 verify_hydroatlas.py
 
-Quick sanity check for attributes_hydroatlas_ausvic.csv after running
-the official Caravan Part-1 Colab notebook.
+Sanity check for attributes_hydroatlas_ausvic.csv produced by
+fetch_hydroatlas_polygon.py (faithful Caravan Part-1 notebook implementation).
+
+Expected structure (after notebook-faithful filtering):
+  - gauge_id + ~197 HydroATLAS attributes = ~198 total columns
+  - Upstream properties excluded (aet_mm_uyr, ari_ix_uav, pre_mm_uyr, etc.)
+  - 'area' column present (km², sum of all intersection fragments)
+  - 'area_fraction_used_for_aggregation' column present
+  - UP_AREA NOT present (it is an auxiliary field, excluded from output)
+  - All 10 gauge IDs present
 
 Usage:
     python verify_hydroatlas.py
@@ -16,8 +24,15 @@ from gauges_config import GAUGES
 
 CSV_PATH = Path("caravan_maribyrnong/attributes/ausvic/attributes_hydroatlas_ausvic.csv")
 
-# Caravan standard: exactly these columns (gauge_id + 294 HydroATLAS attributes = 295 total)
-CARAVAN_HYDROATLAS_COL_COUNT = 295   # gauge_id + 294 HydroATLAS attrs
+# Upstream properties that must NOT appear in notebook-faithful output
+MUST_BE_ABSENT = [
+    'aet_mm_uyr', 'ari_ix_uav', 'pre_mm_uyr', 'pet_mm_uyr',
+    'wet_pc_ug1', 'wet_pc_ug2', 'gad_id_smj',
+    'up_area',   # auxiliary — used internally, excluded from output
+]
+
+# Columns the notebook adds beyond the filtered HydroATLAS properties
+MUST_BE_PRESENT = ['area', 'area_fraction_used_for_aggregation']
 
 
 def main():
@@ -25,9 +40,7 @@ def main():
 
     if not CSV_PATH.exists():
         print("ERROR — file not found.")
-        print("  1. Run the Caravan Part-1 Colab notebook.")
-        print("  2. Download attributes.csv from Google Drive.")
-        print(f"  3. Save it as: {CSV_PATH}")
+        print("  Run: python fetch_hydroatlas_polygon.py")
         return
 
     with open(CSV_PATH, newline="") as f:
@@ -35,49 +48,69 @@ def main():
         rows = list(reader)
         cols = reader.fieldnames or []
 
+    cols_lower = [c.lower() for c in cols]
+
     print(f"Rows:    {len(rows)}")
     print(f"Columns: {len(cols)}")
 
-    # Check gauge_id column
-    if "gauge_id" not in cols:
-        print("\nERROR — 'gauge_id' column missing.")
+    # ── gauge_id ──────────────────────────────────────────────────────────────
+    if "gauge_id" not in cols_lower:
+        print("\n[FAIL] 'gauge_id' column missing")
     else:
         print("  [OK] 'gauge_id' column present")
 
-    # Check column count
-    if len(cols) == CARAVAN_HYDROATLAS_COL_COUNT:
-        print(f"  [OK] {len(cols)} columns (Caravan standard: {CARAVAN_HYDROATLAS_COL_COUNT})")
+    # ── Column count (notebook produces ~198 total) ────────────────────────────
+    if 190 <= len(cols) <= 210:
+        print(f"  [OK] {len(cols)} columns (expected ~198 for notebook-faithful output)")
     else:
-        diff = len(cols) - CARAVAN_HYDROATLAS_COL_COUNT
-        sign = "+" if diff > 0 else ""
-        print(f"  [WARN] {len(cols)} columns (expected {CARAVAN_HYDROATLAS_COL_COUNT}, diff {sign}{diff})")
-        print("         If the file came from the official Colab notebook this is OK.")
-        print("         If it came from fetch_hydroatlas.py it has too many columns — re-run the notebook.")
+        print(f"  [WARN] {len(cols)} columns — expected ~198.")
+        if len(cols) == 295:
+            print("         Looks like old fetch_hydroatlas_polygon.py output (all 294 props).")
+            print("         Re-run:  python fetch_hydroatlas_polygon.py")
 
-    # Check all 10 gauges are present
+    # ── Upstream properties must NOT be present ───────────────────────────────
+    present_upstream = [c for c in MUST_BE_ABSENT if c in cols_lower]
+    if present_upstream:
+        print(f"\n  [FAIL] Upstream properties present (should be excluded):")
+        for c in present_upstream:
+            print(f"         {c}")
+        print("         Re-run:  python fetch_hydroatlas_polygon.py")
+    else:
+        print(f"  [OK] No upstream properties in output "
+              f"(checked {len(MUST_BE_ABSENT)} sentinel columns)")
+
+    # ── Required extra columns ─────────────────────────────────────────────────
+    for col in MUST_BE_PRESENT:
+        if col in cols_lower:
+            print(f"  [OK] '{col}' column present")
+        else:
+            print(f"  [WARN] '{col}' column missing — re-run fetch_hydroatlas_polygon.py")
+
+    # ── Area sanity check ─────────────────────────────────────────────────────
+    area_col = next((c for c in cols if c.lower() == "area"), None)
+    if area_col:
+        print(f"\n  Basin areas from HydroATLAS intersection ('{area_col}' column):")
+        for row in rows:
+            gid = row.get("gauge_id", "?")
+            val = row.get(area_col, "")
+            try:
+                print(f"       {gid}: {float(val):.1f} km²")
+            except (ValueError, TypeError):
+                print(f"       {gid}: {val!r}")
+
+    # ── All 10 gauges present ─────────────────────────────────────────────────
     expected_ids = {g["gauge_id"] for g in GAUGES}
     present_ids  = {r.get("gauge_id", "") for r in rows}
     missing = expected_ids - present_ids
     extra   = present_ids - expected_ids
 
     if not missing:
-        print(f"  [OK] All {len(expected_ids)} gauge IDs present")
+        print(f"\n  [OK] All {len(expected_ids)} gauge IDs present")
     else:
-        print(f"\nERROR — missing gauge IDs: {sorted(missing)}")
+        print(f"\n  [FAIL] Missing gauge IDs: {sorted(missing)}")
 
     if extra:
         print(f"  [WARN] Unexpected gauge IDs: {sorted(extra)}")
-
-    # Check UP_AREA column (used to fill area_km2 in gauges_config.py)
-    up_area_col = next((c for c in cols if c.lower() == "up_area"), None)
-    if up_area_col:
-        print(f"  [OK] '{up_area_col}' (upstream area) column found")
-        for row in rows:
-            gid = row.get("gauge_id", "")
-            val = row.get(up_area_col, "")
-            print(f"       {gid}: {val} km²")
-    else:
-        print("  [WARN] 'UP_AREA' column not found — check column names in the CSV")
 
     print("\nDone.")
 
