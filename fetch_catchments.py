@@ -58,7 +58,7 @@ def init_gee():
     try:
         ee.Initialize(project=GEE_PROJECT)
     except Exception:
-        print("  Not authenticated — opening browser for Google sign-in ...")
+        print("  Not authenticated - opening browser for Google sign-in ...")
         ee.Authenticate()
         ee.Initialize(project=GEE_PROJECT)
 
@@ -89,7 +89,7 @@ def trace_upstream(ee, lat: float, lon: float, gauge_id: str) -> dict:
     outlet_id = props["HYBAS_ID"]
     up_area   = props["UP_AREA"]
     print(f"  Outlet HYBAS_ID : {outlet_id}")
-    print(f"  Outlet UP_AREA  : {up_area:.1f} km²")
+    print(f"  Outlet UP_AREA  : {up_area:.1f} km2")
 
     # ── 2. Trace upstream iteratively ─────────────────────────────────────
     print("  Tracing upstream basins ...")
@@ -122,10 +122,14 @@ def trace_upstream(ee, lat: float, lon: float, gauge_id: str) -> dict:
 
     # ── 4. Build GeoJSON feature ──────────────────────────────────────────
     # Only gauge_id is required in the Caravan shapefile DBF.
+    # up_area_km2 is kept in GeoJSON for the area sanity-check in main();
+    # the shapefile writer uses gdf[["gauge_id","geometry"]] so it is stripped
+    # from the .shp/.dbf output automatically.
     feature = {
         "type": "Feature",
         "properties": {
-            "gauge_id": gauge_id,
+            "gauge_id":    gauge_id,
+            "up_area_km2": up_area,
         },
         "geometry": merged_info["geometry"],
     }
@@ -150,36 +154,31 @@ def main():
         print(f"{'-' * 60}")
 
         if gauge["lat"] is None or gauge["lon"] is None:
-            print("  Skipping — lat/lon not set in gauges_config.py")
+            print("  Skipping - lat/lon not set in gauges_config.py")
             continue
 
         # Quick sanity check: compare HydroBASINS UP_AREA with known area
         known_area = gauge.get("area_km2")
         if known_area:
-            print(f"  Known catchment area: {known_area} km²  "
+            print(f"  Known catchment area: {known_area} km2  "
                   f"(HydroBASINS UP_AREA will be close but not identical)")
 
         try:
             feature = trace_upstream(ee, gauge["lat"], gauge["lon"], gid)
         except Exception as exc:
-            print(f"  ERROR — {exc}")
+            print(f"  ERROR - {exc}")
             continue
 
         hydrobasins_area = feature["properties"]["up_area_km2"]
         if known_area:
             diff_pct = abs(hydrobasins_area - known_area) / known_area * 100
-            print(f"  Area check: HydroBASINS={hydrobasins_area:.1f} km²  "
-                  f"known={known_area} km²  diff={diff_pct:.1f}%")
-
-        # Save individual GeoJSON
-        out_path = OUT_DIR / f"{gid}_catchment.geojson"
-        out_path.write_text(json.dumps(feature, indent=2))
-        print(f"  Saved -> {out_path}")
+            print(f"  Area check: HydroBASINS={hydrobasins_area:.1f} km2  "
+                  f"known={known_area} km2  diff={diff_pct:.1f}%")
 
         all_features.append(feature)
 
     if not all_features:
-        print("\nNo catchments processed — check lat/lon in gauges_config.py")
+        print("\nNo catchments processed - check lat/lon in gauges_config.py")
         return
 
     # Save combined FeatureCollection (for GEE asset upload)
@@ -205,7 +204,7 @@ def main():
         print(f"\n  Shapefile -> {OUT_DIR}/ausvic_basin_shapes.shp")
         shp_written = True
     except ImportError:
-        print("\n  NOTE: geopandas not installed — ESRI shapefile not written.")
+        print("\n  NOTE: geopandas not installed - ESRI shapefile not written.")
         print("        Run:  pip install geopandas")
         print("        Then re-run this script, or convert the GeoJSON manually in QGIS.")
 
@@ -217,9 +216,9 @@ def main():
      ausvic_basin_shapes.geojson         <- combined FeatureCollection
 """ + (f"     ausvic_basin_shapes.shp             <- combined shapefile (Caravan format)\n" if shp_written else "") + f"""
 
- Next — upload shapefile to GEE as an asset:
+ Next - upload shapefile to GEE as an asset:
    1. Go to  https://code.earthengine.google.com/
-   2. Assets tab → NEW → Shape files → upload ausvic_basin_shapes.shp
+   2. Assets tab -> NEW -> Shape files -> upload ausvic_basin_shapes.shp
       (include the .dbf, .shx, .prj files in the same upload)
    3. Note the asset path (e.g. users/YOUR_NAME/ausvic_basin_shapes)
    4. Use that asset path in the Caravan ERA5-Land GEE notebooks to

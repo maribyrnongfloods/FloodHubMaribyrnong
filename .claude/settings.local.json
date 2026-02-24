@@ -30,7 +30,22 @@
       "Bash(du -sh:*)",
       "Bash(gh issue create:*)",
       "Bash(where:*)",
-      "Bash(winget list:*)"
+      "Bash(winget list:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)",
+      "WebFetch(domain:support.google.com)",
+      "WebFetch(domain:sites.research.google)",
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:www.researchgate.net)",
+      "Bash(curl:*)",
+      "Bash(file:*)",
+      "Bash(cat:*)",
+      "Bash(__NEW_LINE_5fc365363bc99b96__ echo \"\")",
+      "Bash(wc -l echo \" Files found in aus_vic directory \\(NOT ausvic!\\) ⚠\" echo \"\" echo \"3. Shapefile status:\" echo -n \" Combined shapefile in ausvic/: \" test -f /c/Users/leela/FloodHubMaribyrnong/caravan_maribyrnong/shapefiles/ausvic/ausvic_basin_shapes.shp)",
+      "Bash(echo \"MISSING ✗\" echo -n \" Individual catchments in ausvic/: \" ls -1 /c/Users/leela/FloodHubMaribyrnong/caravan_maribyrnong/shapefiles/ausvic/*_catchment.geojson)",
+      "Bash(wc -l echo \" \\(should be REMOVED per reviewer\\) ⚠\" echo \"\" echo \"4. Attributes files:\" ls -1 /c/Users/leela/FloodHubMaribyrnong/caravan_maribyrnong/attributes/ausvic/ echo \"\" echo \"5. SILO data in CSVs \\(CRITICAL ISSUE\\):\" grep -c \"radiation_mj_m2_d\\\\|vapour_pressure_hpa\" /c/Users/leela/FloodHubMaribyrnong/caravan_maribyrnong/timeseries/csv/aus_vic/aus_vic_230100.csv echo \" Found SILO columns in CSV headers! ✗\" echo \"\" echo \"6. CAMELS AUS v2 overlap check:\" echo \" Config lists 3 excluded: 230205, 230209, 230210\" echo -n \" Found in timeseries csvs: \" ls /c/Users/leela/FloodHubMaribyrnong/caravan_maribyrnong/timeseries/csv/aus_vic/aus_vic_23020{5,9}.csv)"
     ]
   }
 }

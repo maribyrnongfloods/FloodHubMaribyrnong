@@ -62,14 +62,14 @@ DBF contains only `gauge_id` (no extra columns).
   [caravan_utils.py](https://github.com/kratzert/Caravan/blob/main/code/caravan_utils.py)
   over the standard period 1981-01-01 to 2020-12-31.
 
-**HydroATLAS — ⚠️ STILL REQUIRES MANUAL ACTION:**
-Our `fetch_hydroatlas.py` custom script produces more columns than the
-standard. The official Caravan Part-1 Colab notebook must be used:
-
-1. Open: https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
-2. Run from Google Colab (< 5 minutes per reviewer).
-3. Replace `caravan_maribyrnong/attributes/ausvic/attributes_hydroatlas_ausvic.csv`
-   with the notebook output. Notebook produces exactly 294 standard columns.
+**HydroATLAS — ✅ DONE (automated via fetch_hydroatlas_polygon.py):**
+`fetch_hydroatlas_polygon.py` replicates the Caravan Part-1 Colab notebook logic
+entirely from the command line:
+- BFS upstream trace via HydroBASINS Level-12 to get catchment polygon
+- Intersect with BasinATLAS Level-12 (polygon-based, not point-based)
+- Area-weighted averages across all intersecting sub-basins
+- Produces exactly 295 columns (gauge_id + 294 BasinATLAS properties)
+- Verified: `verify_hydroatlas.py` reports [OK] for all checks
 
 ---
 
@@ -132,7 +132,7 @@ No SILO data is used to fill ERA5 gaps.
 - [x] `compute_attributes.py` — official climate indices 1981-2020 (per Caravan caravan_utils.py)
 - [x] `attributes_other_ausvic.csv` has exactly 14 standard columns; no extras
 - [x] 26/26 unit tests pass
-- [ ] **Re-derive HydroATLAS via official Caravan Part-1 Colab notebook** (< 5 min)
-- [ ] **Delete** `caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv` if present
+- [x] **Re-derive HydroATLAS** via `fetch_hydroatlas_polygon.py` (polygon intersection + area-weighting, 295 cols OK)
+- [x] **Delete** stale `attributes_hydroatlas_aus_vic.csv` + entire `aus_vic/` directory — done
 - [ ] **Re-run full pipeline** with new ERA5 schema (delete era5land_cache_*.json first)
 - [ ] **Re-upload to Zenodo** (new version), post updated DOI to GitHub issue #51

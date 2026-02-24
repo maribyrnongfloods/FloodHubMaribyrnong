@@ -102,7 +102,7 @@ _UNIT_CONVERTERS = {
     "surface_net_solar_radiation":   lambda v: v / 3600.0,
     "surface_net_thermal_radiation": lambda v: v / 3600.0,
     "total_precipitation":           lambda v: v * 1000.0,
-    "potential_evaporation":         lambda v: v * 1000.0,
+    "potential_evaporation":         lambda v: v * -1000.0,
 }
 
 
@@ -195,10 +195,10 @@ BAND_MAP: dict[str, tuple[str, object]] = {
     "surface_net_thermal_radiation_min":  ("surface_net_thermal_radiation_min", lambda v: v / 3600.0),
     "surface_net_thermal_radiation_max":  ("surface_net_thermal_radiation_max", lambda v: v / 3600.0),
     # total precipitation (m -> mm/d)
-    # Note: DAILY_AGGR potential_evaporation_sum is stored as positive for evaporation (m/d).
-    # If values appear negative after a run, update the lambda to: lambda v: v * -1000.0
+    # ERA5-Land potential_evaporation_sum is stored as a negative value (J/m2 convention).
+    # Multiply by -1000 to convert from negative m/d to positive mm/d.
     "total_precipitation_sum":        ("total_precipitation_sum",  lambda v: v * 1000.0),
-    "potential_evaporation_sum_ERA5_LAND": ("potential_evaporation_sum", lambda v: v * 1000.0),
+    "potential_evaporation_sum_ERA5_LAND": ("potential_evaporation_sum", lambda v: v * -1000.0),
 }
 
 
@@ -436,13 +436,22 @@ def merge_era5land(gauge: dict, era5_by_date: dict[str, dict]) -> None:
         )
         merged.append(new_row)
 
-    # ── 2. Pre-ERA5 streamflow rows (e.g. Keilor 1908-1949) ──────────────────
-    pre_era5 = [
-        {"date": d, "streamflow": sf, **{c: "" for c in ERA5_COLS}}
-        for d, sf in sorted(sf_by_date.items())
-        if d not in era5_dates and sf
-    ]
-    merged = pre_era5 + merged   # pre-1950 first, then 1950+ (already sorted)
+    # ── 2. Unmatched streamflow rows ──────────────────────────────────────────
+    # Rows with streamflow but no ERA5 date. Split into:
+    #   pre-ERA5  (before the ERA5 spine start, e.g. Keilor 1908-1949) → prepend
+    #   post-ERA5 (after the ERA5 spine end, e.g. last few days where GEE lags) → append
+    era5_start = min(era5_dates)
+    era5_end   = max(era5_dates)
+    pre_era5: list[dict] = []
+    post_era5: list[dict] = []
+    for d, sf in sorted(sf_by_date.items()):
+        if d not in era5_dates and sf:
+            row = {"date": d, "streamflow": sf, **{c: "" for c in ERA5_COLS}}
+            if d < era5_start:
+                pre_era5.append(row)
+            else:
+                post_era5.append(row)
+    merged = pre_era5 + merged + post_era5   # chronological order
 
     print(f"    Streamflow days matched with ERA5: {matched} / {len(sf_by_date)}")
     print(f"    Pre-ERA5 streamflow rows: {len(pre_era5)}")

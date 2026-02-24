@@ -16,10 +16,10 @@
          → attributes/ausvic/attributes_caravan_ausvic.csv
          → climate indices over 1981-01-01 to 2020-12-31
 
-4. [Caravan Part-1 Colab notebook]    ← MANUAL STEP
-         → https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
-         → produces attributes/ausvic/attributes_hydroatlas_ausvic.csv  (294 standard columns)
-         → also produces area_km2 for each basin
+4. python fetch_hydroatlas_polygon.py
+         → attributes/ausvic/attributes_hydroatlas_ausvic.csv  (295 cols: gauge_id + 294)
+         → replicates Caravan Part-1 Colab notebook logic (polygon intersection + area-weighting)
+         → run verify_hydroatlas.py to confirm output
 
 5. python fetch_catchments.py
          → shapefiles/ausvic/ausvic_basin_shapes.shp  (single file, gauge_id only)
@@ -38,9 +38,10 @@
 NOTE: `fetch_silo_met.py` has been removed. SILO is not globally available
 and must not be included in Caravan (reviewer feedback Feb 2026).
 
-NOTE: `fetch_hydroatlas.py` (our custom script) produces non-standard columns.
-Use the official Caravan Part-1 Colab notebook instead:
-  https://github.com/kratzert/Caravan/blob/main/code/Caravan_part1_Earth_Engine.ipynb
+NOTE: `fetch_hydroatlas.py` (point-based, non-standard) is superseded by
+`fetch_hydroatlas_polygon.py` (polygon intersection + area-weighting, Caravan-standard).
+The new script replicates the official Caravan Part-1 Colab notebook entirely from
+the command line — no Colab or Google Drive needed.
 
 GEE project: `floodhubmaribyrnong`
 
@@ -85,14 +86,14 @@ Never use `--no-verify` to skip the hook.
       total_precipitation_sum, potential_evaporation_sum_ERA5_LAND,
       potential_evaporation_sum_FAO_PENMAN_MONTEITH
 - [x] `attributes_caravan_ausvic.csv` — computed from ERA5-Land via compute_attributes.py
-- [ ] `attributes_hydroatlas_ausvic.csv` — must re-derive via Caravan Part-1 Colab notebook
+- [x] `attributes_hydroatlas_ausvic.csv` — 295 cols (gauge_id + 294 BasinATLAS), all 10 gauges
 - [x] `attributes_other_ausvic.csv` — exactly 14 standard columns (no extras)
 - [x] `ausvic_basin_shapes.shp` (single combined, gauge_id column only)
 - [x] CF-1.8 compliant netCDF4 (41 cols, float32, _FillValue=-9999)
 - [x] CC-BY-4.0 license file (`licenses/ausvic/license_ausvic.md`)
 - [x] 10 gauges (3 CAMELS AUS v2 duplicates removed: 230205, 230209, 230210)
 - [x] All gauge IDs use `ausvic_XXXXXX` format (two-part, splits on `_` to exactly 2)
-- [ ] Delete `caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv` if present
+- [ ] Delete `caravan_maribyrnong/attributes/attributes_hydroatlas_aus_vic.csv` if present (old file)
 - [ ] Re-run full pipeline with new 41-col ERA5 schema
 - [ ] Zenodo re-upload with new version
 - [ ] Update GitHub issue kratzert/Caravan#51 with new DOI

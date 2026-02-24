@@ -107,6 +107,8 @@ def fetch_hydstra_all(gauge: dict) -> list[tuple[str, float]]:
             if raw < 0:
                 continue
             ts = str(pt["t"])
+            if len(ts) < 8:           # Hydstra timestamp must be at least YYYYMMDD
+                continue
             rows.append((f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}", raw))
             good += 1
 
