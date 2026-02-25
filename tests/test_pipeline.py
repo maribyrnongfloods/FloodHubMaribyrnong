@@ -27,6 +27,8 @@ import pytest
 # Allow imports from the project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import pandas as pd
+
 from fetch_maribyrnong import ml_day_to_mm_day, deduplicate
 from fetch_era5land import convert_units, ERA5_COLS, merge_era5land
 
@@ -153,20 +155,19 @@ class TestCaravanColumnNames:
                 writer.writerow(["date", "streamflow"])
                 writer.writerow(["2000-01-05", "1.23"])
 
-            # Synthetic ERA5-Land data
+            # Synthetic daily ERA5-Land DataFrame (new interface)
             start = date(2000, 1, 1)
-            era5_by_date = {}
-            for i in range(n_era5_days):
-                d = (start + timedelta(days=i)).isoformat()
-                rec = {"date": d}
-                for col in ERA5_COLS:
-                    rec[col] = 0.1
-                era5_by_date[d] = rec
+            dates = pd.date_range(start, periods=n_era5_days, freq='D')
+            daily = pd.DataFrame(
+                {col: [0.1] * n_era5_days for col in ERA5_COLS},
+                index=dates,
+            )
+            daily.index.name = "date"
 
             import fetch_era5land as fe5
             original_ts = fe5.TS_DIR
             fe5.TS_DIR = ts_dir
-            merge_era5land({"gauge_id": "test_gauge"}, era5_by_date)
+            merge_era5land({"gauge_id": "test_gauge"}, daily)
             fe5.TS_DIR = original_ts
 
             with open(ts_path, newline="") as f:
@@ -204,8 +205,6 @@ class TestCaravanColumnNames:
     def test_era5_dates_form_spine(self):
         """Output CSV should have rows for all ERA5 dates, not just streamflow dates."""
         n = 10
-        cols_unused = self._run_merge(n_era5_days=n)  # triggers the merge
-        # Re-run and count rows
         with tempfile.TemporaryDirectory() as tmpdir:
             ts_dir = Path(tmpdir) / "timeseries" / "csv" / "ausvic"
             ts_dir.mkdir(parents=True)
@@ -213,18 +212,19 @@ class TestCaravanColumnNames:
             with open(ts_path, "w", newline="") as f:
                 csv.writer(f).writerow(["date", "streamflow"])
                 csv.writer(f).writerow(["2000-01-05", "1.0"])
+
             start = date(2000, 1, 1)
-            era5_by_date = {
-                (start + timedelta(days=i)).isoformat(): {
-                    "date": (start + timedelta(days=i)).isoformat(),
-                    **{col: 0.1 for col in ERA5_COLS}
-                }
-                for i in range(n)
-            }
+            dates = pd.date_range(start, periods=n, freq='D')
+            daily = pd.DataFrame(
+                {col: [0.1] * n for col in ERA5_COLS},
+                index=dates,
+            )
+            daily.index.name = "date"
+
             import fetch_era5land as fe5
             orig = fe5.TS_DIR
             fe5.TS_DIR = ts_dir
-            merge_era5land({"gauge_id": "test_gauge"}, era5_by_date)
+            merge_era5land({"gauge_id": "test_gauge"}, daily)
             fe5.TS_DIR = orig
             with open(ts_path, newline="") as f:
                 row_count = sum(1 for _ in csv.DictReader(f))
@@ -753,3 +753,505 @@ class TestAggregateHydroatlasIntersections:
         # Both qualify; weighted avg = (10*0.001 + 20*5) / 5.001 ≈ 20.0
         expected = (10.0 * 0.001 + 20.0 * 5.0) / (0.001 + 5.0)
         assert result['my_prop'] == pytest.approx(expected)
+
+
+# ── ERA5-Land notebook fidelity ───────────────────────────────────────────────
+
+class TestEra5lNotebookFidelity:
+    """
+    Verify that the constants in fetch_era5land.py exactly match the notebook
+    configuration (Caravan_part2_local_postprocessing.ipynb).
+
+    A single wrong variable name here would silently corrupt the output.
+    """
+
+    def test_gee_collection_is_hourly(self):
+        from fetch_era5land import GEE_COLLECTION
+        assert GEE_COLLECTION == "ECMWF/ERA5_LAND/HOURLY", (
+            f"Must use hourly collection, got {GEE_COLLECTION!r}. "
+            "Daily aggregation must NOT be used — the notebook fetches raw hourly."
+        )
+
+    def test_mean_vars_count(self):
+        """Notebook MEAN_VARS has exactly 12 variables (10 state + 2 radiation)."""
+        from fetch_era5land import MEAN_VARS
+        assert len(MEAN_VARS) == 12, f"Expected 12 MEAN_VARS, got {len(MEAN_VARS)}"
+
+    def test_mean_vars_content(self):
+        """MEAN_VARS must match notebook verbatim."""
+        from fetch_era5land import MEAN_VARS
+        expected = {
+            'snow_depth_water_equivalent',
+            'surface_net_solar_radiation',
+            'surface_net_thermal_radiation',
+            'surface_pressure',
+            'temperature_2m',
+            'dewpoint_temperature_2m',
+            'u_component_of_wind_10m',
+            'v_component_of_wind_10m',
+            'volumetric_soil_water_layer_1',
+            'volumetric_soil_water_layer_2',
+            'volumetric_soil_water_layer_3',
+            'volumetric_soil_water_layer_4',
+        }
+        assert set(MEAN_VARS) == expected
+
+    def test_min_max_equal_mean(self):
+        """MIN_VARS and MAX_VARS must be the same list as MEAN_VARS (notebook config)."""
+        from fetch_era5land import MEAN_VARS, MIN_VARS, MAX_VARS
+        assert MIN_VARS is MEAN_VARS or MIN_VARS == MEAN_VARS, "MIN_VARS must equal MEAN_VARS"
+        assert MAX_VARS is MEAN_VARS or MAX_VARS == MEAN_VARS, "MAX_VARS must equal MEAN_VARS"
+
+    def test_sum_vars_content(self):
+        """SUM_VARS must be exactly ['total_precipitation', 'potential_evaporation']."""
+        from fetch_era5land import SUM_VARS
+        assert SUM_VARS == ['total_precipitation', 'potential_evaporation'], (
+            f"SUM_VARS mismatch: {SUM_VARS!r}"
+        )
+
+    def test_era5l_bands_count(self):
+        """ERA5L_BANDS should list exactly 14 hourly GEE band names."""
+        from fetch_era5land import ERA5L_BANDS
+        assert len(ERA5L_BANDS) == 14, f"Expected 14 ERA5L_BANDS, got {len(ERA5L_BANDS)}"
+
+    def test_era5l_bands_includes_accumulated(self):
+        """ERA5L_BANDS must include the 4 accumulated variables."""
+        from fetch_era5land import ERA5L_BANDS
+        for var in ('total_precipitation', 'potential_evaporation',
+                    'surface_net_solar_radiation', 'surface_net_thermal_radiation'):
+            assert var in ERA5L_BANDS, f"Accumulated variable '{var}' missing from ERA5L_BANDS"
+
+    def test_era5_cols_count(self):
+        """ERA5_COLS must produce exactly 39 output column names."""
+        from fetch_era5land import ERA5_COLS
+        assert len(ERA5_COLS) == 39, f"Expected 39 ERA5_COLS, got {len(ERA5_COLS)}: {ERA5_COLS}"
+
+    def test_era5_cols_pet_names(self):
+        """The two PET column names must use the exact Caravan-standard suffixes."""
+        from fetch_era5land import ERA5_COLS
+        assert "potential_evaporation_sum_ERA5_LAND" in ERA5_COLS
+        assert "potential_evaporation_sum_FAO_PENMAN_MONTEITH" in ERA5_COLS
+
+    def test_era5_cols_no_raw_pet(self):
+        """'potential_evaporation_sum' (un-suffixed) must NOT appear in ERA5_COLS."""
+        from fetch_era5land import ERA5_COLS
+        assert "potential_evaporation_sum" not in ERA5_COLS, (
+            "Raw potential_evaporation_sum must be renamed before output"
+        )
+
+
+# ── disaggregate_features ─────────────────────────────────────────────────────
+
+class TestDisaggregateFeatures:
+    """
+    Verify the ERA5-Land hourly de-accumulation logic in disaggregate_features().
+
+    ERA5-Land HOURLY (GEE) stores accumulated fluxes where val[00:00 UTC]
+    equals the total from the previous 24-hour forecast period (forecast hour 24
+    from the prior UTC day initialisation). After diff(1):
+      - hour 00: correct  (= last hour of previous UTC day)
+      - hour 01: WRONG    (= first_hour - prev_24h_total) → must be replaced
+      - hour 02+: correct (consecutive hourly differences)
+    """
+
+    def _make_hourly_df(self, values: list, start: str = "2020-01-01 00:00") -> pd.DataFrame:
+        """Build a single-column hourly DataFrame with a DatetimeIndex."""
+        idx = pd.date_range(start, periods=len(values), freq='h')
+        return pd.DataFrame({"total_precipitation": values}, index=idx)
+
+    def test_diff_applied_to_accumulated_col(self):
+        """After disaggregate, values should be hour-by-hour differences (not cumulative)."""
+        from fetch_era5land import disaggregate_features
+        # 3 days × 24 h; simple cumulative ramp 1, 2, 3, …
+        # Use values that make the expected diffs obvious.
+        # hour00=24, hour01=1, hour02=2, ..., hour23=23, hour24=24 (next day hour00)
+        vals = list(range(1, 25)) + list(range(1, 25)) + list(range(1, 25))
+        df = self._make_hourly_df(vals)
+        result = disaggregate_features(df)
+        col = result["total_precipitation"]
+        # All hour==2..23 positions should be 1 (consecutive diffs of a ramp)
+        for i in range(2, 24):
+            assert col.iloc[i] == pytest.approx(1.0), (
+                f"hour {i}: expected 1.0 (diff of ramp), got {col.iloc[i]}"
+            )
+
+    def test_hour_1_replaced_with_original(self):
+        """Values at hour==01 UTC must be replaced with the original (not diff)."""
+        from fetch_era5land import disaggregate_features
+        # Build a sequence: 00:00=100, 01:00=2, 02:00=3, …
+        # diff at 01:00 = 2 - 100 = -98 (wrong), should be replaced with 2
+        vals = [100.0] + list(range(2, 25))   # 24 hours starting at 00:00
+        df = self._make_hourly_df(vals, start="2020-01-01 00:00")
+        result = disaggregate_features(df)
+        # iloc[1] = hour 01:00
+        assert result["total_precipitation"].iloc[1] == pytest.approx(2.0), (
+            "hour 01 must be original value, not diff"
+        )
+
+    def test_first_row_replaced_with_original(self):
+        """First row (diff = NaN) must be replaced with the original value."""
+        from fetch_era5land import disaggregate_features
+        vals = [5.0, 6.0, 7.0]
+        df = self._make_hourly_df(vals, start="2020-01-01 00:00")
+        result = disaggregate_features(df)
+        assert result["total_precipitation"].iloc[0] == pytest.approx(5.0)
+        assert not pd.isna(result["total_precipitation"].iloc[0])
+
+    def test_non_accumulated_cols_unchanged(self):
+        """Columns not in the accumulated list (e.g. temperature_2m) must not be touched."""
+        from fetch_era5land import disaggregate_features
+        idx = pd.date_range("2020-01-01 00:00", periods=24, freq='h')
+        df = pd.DataFrame({
+            "temperature_2m": [280.0 + i for i in range(24)],
+            "total_precipitation": list(range(1, 25)),
+        }, index=idx)
+        original_temp = df["temperature_2m"].copy()
+        result = disaggregate_features(df)
+        pd.testing.assert_series_equal(result["temperature_2m"], original_temp)
+
+    def test_output_shape_unchanged(self):
+        """disaggregate_features must not change the shape of the DataFrame."""
+        from fetch_era5land import disaggregate_features
+        vals = list(range(1, 49))  # 48 rows
+        df = self._make_hourly_df(vals)
+        result = disaggregate_features(df)
+        assert result.shape == df.shape
+
+
+# ── era5l_unit_conversion ─────────────────────────────────────────────────────
+
+class TestEra5lUnitConversion:
+    """
+    Verify that era5l_unit_conversion() applies the right multiplier/offset
+    to each variable, and does NOT flip the PET sign (that happens before it
+    in the notebook pipeline, not inside this function).
+    """
+
+    def _df(self, **kwargs) -> pd.DataFrame:
+        """Build a one-row DataFrame from keyword args."""
+        idx = pd.date_range("2020-01-01", periods=1, freq='h')
+        return pd.DataFrame(kwargs, index=idx)
+
+    def test_temperature_k_to_c(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(temperature_2m=[273.15])
+        result = era5l_unit_conversion(df)
+        assert result["temperature_2m"].iloc[0] == pytest.approx(0.0)
+
+    def test_dewpoint_k_to_c(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(dewpoint_temperature_2m=[300.0])
+        result = era5l_unit_conversion(df)
+        assert result["dewpoint_temperature_2m"].iloc[0] == pytest.approx(300.0 - 273.15)
+
+    def test_pressure_pa_to_kpa(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(surface_pressure=[101325.0])
+        result = era5l_unit_conversion(df)
+        assert result["surface_pressure"].iloc[0] == pytest.approx(101.325)
+
+    def test_snow_depth_m_to_mm(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(snow_depth_water_equivalent=[0.005])
+        result = era5l_unit_conversion(df)
+        assert result["snow_depth_water_equivalent"].iloc[0] == pytest.approx(5.0)
+
+    def test_solar_radiation_j_to_w(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(surface_net_solar_radiation=[3600.0])
+        result = era5l_unit_conversion(df)
+        assert result["surface_net_solar_radiation"].iloc[0] == pytest.approx(1.0)
+
+    def test_thermal_radiation_j_to_w(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(surface_net_thermal_radiation=[7200.0])
+        result = era5l_unit_conversion(df)
+        assert result["surface_net_thermal_radiation"].iloc[0] == pytest.approx(2.0)
+
+    def test_precipitation_m_to_mm(self):
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(total_precipitation=[0.002])
+        result = era5l_unit_conversion(df)
+        assert result["total_precipitation"].iloc[0] == pytest.approx(2.0)
+
+    def test_pet_m_to_mm_no_sign_flip(self):
+        """era5l_unit_conversion does m->mm on PET only; sign flip is NOT inside it."""
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(potential_evaporation=[0.003])
+        result = era5l_unit_conversion(df)
+        # 0.003 m * 1000 = 3.0 mm (positive stays positive — sign already flipped upstream)
+        assert result["potential_evaporation"].iloc[0] == pytest.approx(3.0)
+
+    def test_wind_components_unchanged(self):
+        """u and v wind components have no unit conversion (already m/s)."""
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(u_component_of_wind_10m=[3.5], v_component_of_wind_10m=[-1.2])
+        result = era5l_unit_conversion(df)
+        assert result["u_component_of_wind_10m"].iloc[0] == pytest.approx(3.5)
+        assert result["v_component_of_wind_10m"].iloc[0] == pytest.approx(-1.2)
+
+    def test_soil_moisture_unchanged(self):
+        """Volumetric soil water (all 4 layers) is already m3/m3, no conversion."""
+        from fetch_era5land import era5l_unit_conversion
+        df = self._df(
+            volumetric_soil_water_layer_1=[0.3],
+            volumetric_soil_water_layer_2=[0.25],
+            volumetric_soil_water_layer_3=[0.2],
+            volumetric_soil_water_layer_4=[0.15],
+        )
+        result = era5l_unit_conversion(df)
+        for layer in range(1, 5):
+            col = f"volumetric_soil_water_layer_{layer}"
+            assert result[col].iloc[0] == pytest.approx(df[col].iloc[0])
+
+
+# ── Basin extension process (wiki compliance) ─────────────────────────────────
+
+class TestIdFieldName:
+    """
+    Enforce the wiki rule: the GEE asset shapefile must use a basin ID field
+    whose name is NOT any HydroATLAS / HydroBASINS field name.
+
+    Source: https://github.com/kratzert/Caravan/wiki/Extending-Caravan-with-new-basins
+    "Make sure that the name of this field is different to any HydroATLAS field.
+     For example, you can use `gauge_id` or `basin_id` but not `HYBAS_ID` or
+     `PFAF_ID`, which are both field names in HydroATLAS."
+    """
+
+    def test_gauge_id_is_valid(self):
+        """'gauge_id' is the recommended field name — must be accepted."""
+        from validate_submission import validate_id_field_name
+        validate_id_field_name("gauge_id")  # must not raise
+
+    def test_basin_id_is_valid(self):
+        """'basin_id' is another acceptable choice."""
+        from validate_submission import validate_id_field_name
+        validate_id_field_name("basin_id")
+
+    def test_hybas_id_is_forbidden(self):
+        """HYBAS_ID is explicitly called out in the wiki as forbidden."""
+        from validate_submission import validate_id_field_name
+        with pytest.raises(ValueError, match="HYBAS_ID"):
+            validate_id_field_name("HYBAS_ID")
+
+    def test_pfaf_id_is_forbidden(self):
+        """PFAF_ID is explicitly called out in the wiki as forbidden."""
+        from validate_submission import validate_id_field_name
+        with pytest.raises(ValueError, match="PFAF_ID"):
+            validate_id_field_name("PFAF_ID")
+
+    def test_next_down_is_forbidden(self):
+        """NEXT_DOWN is a HydroBASINS structural field — must be forbidden."""
+        from validate_submission import validate_id_field_name
+        with pytest.raises(ValueError):
+            validate_id_field_name("NEXT_DOWN")
+
+    def test_up_area_is_forbidden(self):
+        """UP_AREA is a HydroBASINS structural field — must be forbidden."""
+        from validate_submission import validate_id_field_name
+        with pytest.raises(ValueError):
+            validate_id_field_name("UP_AREA")
+
+    def test_empty_string_is_rejected(self):
+        """Empty field name is not valid."""
+        from validate_submission import validate_id_field_name
+        with pytest.raises(ValueError):
+            validate_id_field_name("")
+
+    def test_whitespace_only_is_rejected(self):
+        from validate_submission import validate_id_field_name
+        with pytest.raises(ValueError):
+            validate_id_field_name("   ")
+
+
+class TestGaugeIdValidation:
+    """
+    Enforce Caravan gauge_id format: exactly two parts when split on '_',
+    all values unique, none empty.
+    """
+
+    def test_valid_ausvic_ids(self):
+        from validate_submission import validate_gauge_ids
+        ids = ["ausvic_230100", "ausvic_230200", "ausvic_230104"]
+        validate_gauge_ids(ids)  # must not raise
+
+    def test_single_valid_id(self):
+        from validate_submission import validate_gauge_ids
+        validate_gauge_ids(["ausvic_230200"])
+
+    def test_three_part_id_rejected(self):
+        """aus_vic_230100 has 3 parts — the old (wrong) format."""
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError, match="3 part"):
+            validate_gauge_ids(["aus_vic_230100"])
+
+    def test_no_underscore_rejected(self):
+        """A bare station ID with no prefix is not valid."""
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError):
+            validate_gauge_ids(["230200"])
+
+    def test_duplicate_ids_rejected(self):
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError, match="Duplicate"):
+            validate_gauge_ids(["ausvic_230100", "ausvic_230200", "ausvic_230100"])
+
+    def test_empty_string_in_list_rejected(self):
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError):
+            validate_gauge_ids(["ausvic_230100", ""])
+
+    def test_empty_list_rejected(self):
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError):
+            validate_gauge_ids([])
+
+    def test_trailing_underscore_rejected(self):
+        """'ausvic_' has an empty station part after the underscore."""
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError):
+            validate_gauge_ids(["ausvic_"])
+
+    def test_leading_underscore_rejected(self):
+        """'_230200' has an empty prefix before the underscore."""
+        from validate_submission import validate_gauge_ids
+        with pytest.raises(ValueError):
+            validate_gauge_ids(["_230200"])
+
+    def test_all_10_config_gauges_are_valid(self):
+        """Every gauge ID in gauges_config.py must pass validation."""
+        from gauges_config import GAUGES
+        from validate_submission import validate_gauge_ids
+        ids = [g["gauge_id"] for g in GAUGES]
+        validate_gauge_ids(ids)  # must not raise
+
+
+class TestShapefileDbfColumns:
+    """
+    Caravan requires the combined shapefile DBF to contain ONLY 'gauge_id'.
+    No extra columns allowed (reviewer requirement, Feb 2026).
+    """
+
+    def test_gauge_id_only_is_valid(self):
+        from validate_submission import validate_shapefile_dbf_columns
+        validate_shapefile_dbf_columns(["gauge_id"])  # must not raise
+
+    def test_extra_column_rejected(self):
+        from validate_submission import validate_shapefile_dbf_columns
+        with pytest.raises(ValueError, match="extra"):
+            validate_shapefile_dbf_columns(["gauge_id", "area_km2"])
+
+    def test_missing_gauge_id_rejected(self):
+        from validate_submission import validate_shapefile_dbf_columns
+        with pytest.raises(ValueError, match="gauge_id"):
+            validate_shapefile_dbf_columns(["name"])
+
+    def test_empty_column_list_rejected(self):
+        from validate_submission import validate_shapefile_dbf_columns
+        with pytest.raises(ValueError):
+            validate_shapefile_dbf_columns([])
+
+    def test_up_area_column_rejected(self):
+        """up_area_km2 is computed internally but must be stripped from output."""
+        from validate_submission import validate_shapefile_dbf_columns
+        with pytest.raises(ValueError):
+            validate_shapefile_dbf_columns(["gauge_id", "up_area_km2"])
+
+    def test_gauge_id_must_be_lowercase(self):
+        """'GAUGE_ID' (uppercase) is wrong — Caravan uses lowercase 'gauge_id'."""
+        from validate_submission import validate_shapefile_dbf_columns
+        with pytest.raises(ValueError):
+            validate_shapefile_dbf_columns(["GAUGE_ID"])
+
+
+class TestGeoJsonFeatureProperties:
+    """
+    The output GeoJSON (ausvic_basin_shapes.geojson) must have exactly one
+    property per feature: gauge_id. Internal fields (e.g. up_area_km2) must
+    be stripped before writing.
+    """
+
+    def test_gauge_id_only_is_valid(self):
+        from validate_submission import validate_geojson_feature_properties
+        validate_geojson_feature_properties({"gauge_id": "ausvic_230200"})
+
+    def test_extra_property_rejected(self):
+        from validate_submission import validate_geojson_feature_properties
+        with pytest.raises(ValueError, match="extra"):
+            validate_geojson_feature_properties({
+                "gauge_id": "ausvic_230200",
+                "up_area_km2": 1305.4,
+            })
+
+    def test_missing_gauge_id_rejected(self):
+        from validate_submission import validate_geojson_feature_properties
+        with pytest.raises(ValueError, match="gauge_id"):
+            validate_geojson_feature_properties({"name": "Keilor"})
+
+    def test_empty_properties_rejected(self):
+        from validate_submission import validate_geojson_feature_properties
+        with pytest.raises(ValueError):
+            validate_geojson_feature_properties({})
+
+    def test_empty_gauge_id_value_rejected(self):
+        from validate_submission import validate_geojson_feature_properties
+        with pytest.raises(ValueError):
+            validate_geojson_feature_properties({"gauge_id": ""})
+
+
+class TestOutputFiles:
+    """
+    Verify that validate_output_files() correctly identifies missing files
+    and returns an empty list when all required paths exist.
+    """
+
+    def test_all_present_returns_empty_list(self):
+        """When every required path exists, no missing files are reported."""
+        from validate_submission import validate_output_files, REQUIRED_OUTPUT_FILES
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            for rel in REQUIRED_OUTPUT_FILES:
+                p = root / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                if not p.exists():
+                    p.touch()
+            result = validate_output_files(root)
+            assert result == [], f"Expected no missing files, got: {result}"
+
+    def test_missing_file_detected(self):
+        """A missing required file must appear in the returned list."""
+        from validate_submission import validate_output_files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = validate_output_files(tmpdir)
+            assert len(result) > 0
+
+    def test_missing_license_detected(self):
+        from validate_submission import validate_output_files, REQUIRED_OUTPUT_FILES
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            # Create all files except the license
+            for rel in REQUIRED_OUTPUT_FILES:
+                if "license" in rel:
+                    continue
+                p = root / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                if not p.exists():
+                    p.touch()
+            result = validate_output_files(root)
+            assert any("license" in m for m in result), (
+                "Missing license file must be reported"
+            )
+
+    def test_missing_shapefile_detected(self):
+        from validate_submission import validate_output_files, REQUIRED_OUTPUT_FILES
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            for rel in REQUIRED_OUTPUT_FILES:
+                if "shapefiles" in rel:
+                    continue
+                p = root / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                if not p.exists():
+                    p.touch()
+            result = validate_output_files(root)
+            assert any("shapefiles" in m for m in result)

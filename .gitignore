@@ -1,6 +1,9 @@
 # Generated output — run the scripts to reproduce
 caravan_maribyrnong/
 
+# Local reference material — not part of the codebase
+code_to_leverage/
+
 # Per-script data caches (deleted to force re-download)
 era5land_cache_*.json
 silo_cache_*.csv
