@@ -351,7 +351,7 @@ def write_nc(gauge: dict, attrs: dict) -> Path:
             else f"Victorian Water Monitoring (data.water.vic.gov.au), "
                  f"Station {gauge['station_id']}"
         ),
-        "met_source":        "ERA5-Land via Google Earth Engine (ECMWF/ERA5_LAND/DAILY_AGGR)",
+        "met_source":        "ERA5-Land via Google Earth Engine (ECMWF/ERA5_LAND/HOURLY)",
         "license":           "CC-BY-4.0",
         "notes":             gauge.get("notes", ""),
         "created":           datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
