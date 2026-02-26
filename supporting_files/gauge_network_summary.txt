@@ -10,20 +10,49 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
                     except Keilor (230200) which uses the official Victorian
                     Water figure of 1305.4 km² (586 gaugings 1908–2025).
 
+================================================================================
+ EXCLUDED STATIONS
+================================================================================
+
 3 stations excluded — already present in Caravan via CAMELS AUS v2
 (Zenodo 13350616, checked Feb 2026):
   230210  Jacksons Creek at Bullengarook  (CAMELS period 1968–2022)
   230205  Deep Creek at Bulla             (CAMELS period 1955–2022)
   230209  Barringo Creek at Barringo      (CAMELS period 1966–2020)
 
-1 station excluded — agency duplicate (Feb 2026):
+2 stations excluded — agency duplicates (same physical gauge as a Hydstra
+station; Hydstra record kept because it is substantially longer):
   230104A  Jacksons Creek at Sunbury Road, Sunbury
-           Co-located with Hydstra gauge 230202 (same physical gauge, ~10 m
-           separation). 230104A is the Melbourne Water agency ID; 230202 is
-           the Victorian Water / Hydstra ID. 230202 kept: record from 1960
-           vs 1996 (36-year longer record).
-           Source: Oct 2022 post-event flood analysis named it "Jacksons
-           Creek at Sunbury Road" — confirming it is NOT on the mainstem.
+           Co-located with Hydstra gauge 230202 (~10 m separation). 230104A
+           is the Melbourne Water agency ID; 230202 is the Victorian Water /
+           Hydstra ID. 230202 kept: record from 1960 vs 1996 (36-year longer).
+           Source: Oct 2022 post-event flood analysis named it "Jacksons Creek
+           at Sunbury Road" — confirming it is NOT on the mainstem.
+  230105A  Maribyrnong River at Keilor (Melbourne Water ID)
+           Same physical crump weir as Hydstra 230200. BOM assigns this station
+           the MW ID 230105A; Victorian Water uses 230200. 230200 kept: record
+           from 1907 vs 1996 (89-year longer record).
+
+1 station excluded — reservoir (not a streamflow gauge):
+  230103A  Rosslynne Reservoir
+           The Melbourne Water API flags this site as a reservoir recording
+           (reservoirRecording = true). Reservoir inflows/outflows are managed
+           releases, not natural streamflow, and are not suitable for Caravan.
+
+2 stations excluded — record too short (started 2025, <1 year of data):
+  230232A  Deep Creek at Bolinda        (flow from 2025)
+  230233A  Jacksons Creek at Gisborne WWTP (flow from 2025)
+           Both gauges are newly commissioned (as of early 2025). Insufficient
+           record length for meaningful climate-index computation or ML training.
+           230233A is also downstream of a wastewater treatment plant, introducing
+           non-natural flow components. Re-evaluate for inclusion in future updates.
+
+5 stations excluded — no flow data (level-recording only or weather station):
+  230119A  Lancefield             — no discharge data in Melbourne Water API
+  230236A  Keilor East            — no discharge data (level gauge only)
+  230206C  Jacksons Ck DS Rosslynne Res — no discharge data
+  230204B  Riddells Creek at Riddells Creek — no discharge data
+  230810A  Sunbury Tanks AWS      — automated weather station, no streamflow
 
 ================================================================================
  MAINSTEM & DEEP CREEK — Melbourne Water API (api.melbournewater.com.au)
@@ -49,6 +78,9 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
                  flows before entering the Maribyrnong mainstem. Closes the
                  water balance gap between Darraweit Guim (682.7 km²) and
                  Keilor (1305.4 km²). Oct 2022 peak: 98 m³/s.
+   Note        : The Melbourne Water /summary API does not expose flowLevels
+                 for this station. Flow confirmed via direct API query over
+                 the Oct 2022 flood window (10–20 Oct 2022).
    Source      : Identified from Oct 2022 post-event flood analysis.
                  CAMELS AUS v2 check Feb 2026: not present — safe to include.
                  MW API has flow from 2004; pre-2004 level data from 1996.
@@ -82,6 +114,9 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
                  in Sydenham Park. Captures combined mainstem + Jacksons
                  Creek flows. Sits between Sunbury (406.7 km²) and Keilor
                  (1305.4 km²). Used in official MW flood warning operations.
+   Note        : The Melbourne Water /summary API does not expose flowLevels
+                 for this station. Flow confirmed via direct API query over
+                 the Oct 2022 flood window (10–20 Oct 2022).
    Source      : Station number confirmed from Maribyrnong Municipal Storm
                  and Flood Emergency Plan v4.0 (Oct 2018), Table A4.
                  CAMELS AUS v2 check Feb 2026: not present — safe to include.
@@ -99,6 +134,27 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
                  (source: Maribyrnong Municipal Storm and Flood Emergency
                  Plan v4.0, Oct 2018, Appendix C1).
 
+   Tidal limitation and flood prediction (note for residents near Chifley Drive)
+   ────────────────────────────────────────────────────────────────────────────
+   On most days, tidal backwater masks the river signal — this gauge is
+   essentially a tide gauge except during major flood events. The 263 valid
+   flow days provide sparse ML training data, so a model trained on this gauge
+   alone would have limited skill at predicting "normal" runoff behaviour.
+
+   However, the events that actually matter for residents — major floods — DO
+   produce stage well above the tidal threshold, so those events ARE captured
+   in the training record. The Oct 2022 flood (4.22 m) is included.
+
+   For practical flood prediction near Chifley Drive, the primary leading
+   indicator is Keilor (230200), located ~5 km upstream. Keilor has records
+   from 1907, a well-constrained catchment area (1305.4 km²), and is the
+   gauge used by Melbourne Water and emergency services for flood watch.
+   The Maribyrnong Municipal Storm and Flood Emergency Plan (2018) explicitly
+   links Keilor stage levels to downstream inundation severity. The addition
+   of 230102A (Deep Creek at Bulla) and 230237A (Keilor North) to this dataset
+   improves upstream catchment coverage and should strengthen ML model
+   skill at predicting the flood peak that arrives at Chifley Drive.
+
 ================================================================================
  MAINSTEM — Victorian Water / Hydstra API (data.water.vic.gov.au)
 ================================================================================
@@ -113,6 +169,7 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
                  Oct 2022: 768 m³/s (highest since 1974, just above 2% AEP).
    Note        : BOM also assigns this station ID 230105A (same physical gauge,
                  different agency system). We use the Hydstra/DELWP number.
+                 The MW duplicate (230105A) is excluded — see Excluded section.
 
 ================================================================================
  TRIBUTARIES — Victorian Water / Hydstra API (data.water.vic.gov.au)
@@ -163,7 +220,7 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
  3  ausvic_230211     230211A   Bolinda Creek at Clarkefield        177.9   2008
  4  ausvic_230107     230107A   Konagaderra Creek at Konagaderra    682.7   1996
  5  ausvic_230237 †   230237A   Maribyrnong River at Keilor North 1413.8   2008
- 6  ausvic_230106     230106A   Maribyrnong River at Chifley Drive 1413.6   1996
+ 6  ausvic_230106 ‡   230106A   Maribyrnong River at Chifley Drive 1413.6   1996
  7  ausvic_230200     230200    Maribyrnong River at Keilor        1305.4   1907
  8  ausvic_230206     230206    Jackson Creek at Gisborne           154.1   1960
  9  ausvic_230202     230202    Jackson Creek at Sunbury            406.7   1960
@@ -171,8 +228,12 @@ Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
 11  ausvic_230227     230227    Main Creek at Kerrie                177.9   1990
 
 † area_km2 for ausvic_230237: HydroATLAS Level-12 snaps Keilor North, Keilor, and
-  Chifley Drive to the same outlet basin — all three return 1413.8 km². True
-  catchment is smaller (likely 900–1200 km²) but no finer estimate is available.
+  Chifley Drive to the same outlet basin — all three return ~1413 km². True
+  catchment for 230237A is smaller (likely 900–1200 km²) but no finer estimate
+  is available. 230200 uses the official VW figure (1305.4 km²) instead.
+
+‡ ausvic_230106 (Chifley Drive): tidal zone gauge. Only 263 valid flow days on
+  record — see tidal limitation note in the gauge entry above.
 
 ================================================================================
  DATA SOURCES
@@ -187,7 +248,7 @@ Victorian Water WMIS : data.water.vic.gov.au (Hydstra API)
                        Gauges: 230200, 230202, 230206, 230213, 230227
                        License: Creative Commons Attribution 4.0
 
-ERA5-Land forcing    : ECMWF/ERA5_LAND/DAILY_AGGR via Google Earth Engine
+ERA5-Land forcing    : ECMWF/ERA5_LAND/HOURLY via Google Earth Engine
                        Coverage: 1950-01-02 to present (39 variables)
                        License: Copernicus C3S
 
@@ -210,6 +271,8 @@ attributes             (polygon intersection + area-weighting method)
    Storm and Flood Emergency Plan, Version 4.0, October 2018.
    → Confirmed station number 230237A for "Keilor North" junction gauge
    → Provided AEP flood level benchmarks for 230106A (Chifley Drive)
+   → Confirms Keilor (230200) as the primary upstream flood warning indicator
+     for lower Maribyrnong including the Chifley Drive reach
 
 3. Kratzert et al. (2023). Caravan — A global community dataset for
    large-sample hydrology. Scientific Data, 10, 61.
