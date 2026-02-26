@@ -249,14 +249,15 @@ class TestGaugeConfig:
             )
 
     def test_gauge_count(self):
-        """Extension must have exactly 11 gauges.
+        """Extension must have exactly 12 gauges.
         Removed: 3 CAMELS AUS v2 duplicates (230210, 230205, 230209) + 1 agency duplicate
                  (230104A co-located with Hydstra 230202; 230202 kept, longer record).
-        Added:   2 new gauges Feb 2026 (230102A Deep Creek at Bulla, 230237A Keilor North).
+        Added:   3 new gauges Feb 2026 (230102A Deep Creek at Bulla,
+                 230237A Keilor North, 230119A Maribyrnong River at Lancefield).
         """
         from gauges_config import GAUGES
-        assert len(GAUGES) == 11, (
-            f"Expected 11 gauges, got {len(GAUGES)}"
+        assert len(GAUGES) == 12, (
+            f"Expected 12 gauges, got {len(GAUGES)}"
         )
 
     def test_excluded_gauges_absent(self):
