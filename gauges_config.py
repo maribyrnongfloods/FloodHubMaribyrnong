@@ -12,12 +12,13 @@ Catchment areas (area_km2=None):
   Run fetch_hydroatlas.py — HydroATLAS UP_AREA will auto-fill these
   from the upstream drainage area at each gauge location.
 
-Gauge network (11 gauges — revised Feb 2026):
+Gauge network (12 gauges — revised Feb 2026):
 
   NOTE: gauge_id format is now ausvic_XXXXXX (not aus_vic_XXXXXX).
   Reviewer requested two-part IDs so gauge_id.split('_') returns exactly 2 parts.
 
-  DEEP CREEK / UPPER CATCHMENT (Melbourne Water / melbwater API):
+  MAINSTEM / UPPER CATCHMENT (Melbourne Water / melbwater API):
+    230119A  Lancefield        Upper Maribyrnong mainstem, TBD+  ← added Feb 2026
     230100A  Darraweit Guim    Deep Creek (upper tributary), 1996+
     230102A  Bulla             Deep Creek d/s Emu Creek at Bulla, 2004+  ← added Feb 2026
     230211A  Clarkefield       Bolinda Creek (upper tributary), 2008+
@@ -51,6 +52,24 @@ from datetime import date
 
 GAUGES = [
     {
+        # ── Maribyrnong River @ Lancefield (most upstream mainstem gauge) ───
+        # ADDED Feb 2026. Flow confirmed via Melbourne Water API direct query
+        # over Oct 2022 flood window (mean 120.6 ML/day on 20 Oct 2022).
+        # /summary API does not expose flowLevels.minYear — fetch_start will
+        # be confirmed when fetch_maribyrnong.py fetches the full record.
+        # Area 349.2 km² from HydroATLAS UP_AREA (GEE point lookup, Feb 2026).
+        # CAMELS AUS v2 check Feb 2026: not present — safe to include.
+        "station_id":   "230119A",
+        "gauge_id":     "ausvic_230119",
+        "name":         "Maribyrnong River at Lancefield",
+        "lat":          -37.2861,
+        "lon":          144.7777,
+        "area_km2":     349.2,
+        "api":          "melbwater",
+        "fetch_start":  date(1996, 1, 1),   # placeholder — confirm after first fetch
+        "notes":        "Most upstream mainstem gauge. Flow confirmed via Oct 2022 flood window. fetch_start TBD.",
+    },
+    {
         # ── Deep Creek @ Darraweit Guim (upper mainstem tributary) ─────────
         # Name source: Jacobs/Melbourne Water Oct 2022 post-event analysis.
         # Previously misnamed "Maribyrnong River at Darraweit" — Deep Creek
@@ -78,7 +97,7 @@ GAUGES = [
         "name":         "Deep Creek at Bulla",
         "lat":          -37.6314,
         "lon":          144.801,
-        "area_km2":     876.4,  # from HydroATLAS UP_AREA (polygon intersection)
+        "area_km2":     876.1,  # from HydroATLAS UP_AREA (GEE point lookup, Feb 2026)
         "api":          "melbwater",
         "fetch_start":  date(2004, 1, 1),
         "notes":        "Deep Creek downstream of Emu Creek confluence at Bulla; flow from 2004.",
@@ -123,7 +142,7 @@ GAUGES = [
         "name":         "Maribyrnong River at Keilor North",
         "lat":          -37.6778,
         "lon":          144.805,
-        "area_km2":     1413.8, # HydroATLAS UP_AREA — Level-12 resolution snaps all three
+        "area_km2":     1413.6, # HydroATLAS UP_AREA — Level-12 resolution snaps all three
         # lower mainstem gauges (Keilor North, Keilor, Chifley Drive) to the same
         # outlet basin (HYBAS_ID 5120612070). Use with caution: true catchment
         # is smaller than 1305.4 km² (Keilor official), but no finer estimate available.
