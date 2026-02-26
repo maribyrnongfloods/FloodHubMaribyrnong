@@ -30,12 +30,12 @@ community dataset.
 Three gauges (230205, 230209, 230210) present in CAMELS AUS v2 are excluded
 to avoid duplicating records already in Caravan.
 
-### Mainstem gauges (Melbourne Water API)
+### Melbourne Water API gauges
 
 | gauge_id | Station name | Station ID |
 |---|---|---|
-| ausvic_230100 | Maribyrnong River at Darraweit | 230100A |
-| ausvic_230211 | Maribyrnong River at Clarkefield | 230211A |
+| ausvic_230100 | Deep Creek at Darraweit Guim | 230100A |
+| ausvic_230211 | Bolinda Creek at Clarkefield | 230211A |
 | ausvic_230104 | Maribyrnong River at Sunbury | 230104A |
 | ausvic_230107 | Konagaderra Creek at Konagaderra | 230107A |
 | ausvic_230200 | Maribyrnong River at Keilor | 230200 |

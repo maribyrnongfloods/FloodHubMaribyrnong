@@ -14,8 +14,8 @@ Contributing Maribyrnong River gauging stations to [Caravan](https://github.com/
 
 | Station | Name | Area (km²) | Streamflow period |
 |---------|------|-----------|-------------------|
-| 230100A | Maribyrnong River at Darraweit | 682.7 | 2004-01-01 – 2025-12-29 |
-| 230211A | Maribyrnong River at Clarkefield | 177.9 | 2008-08-09 – 2026-01-15 |
+| 230100A | Deep Creek at Darraweit Guim | 682.7 | 2004-01-01 – 2025-12-29 |
+| 230211A | Bolinda Creek at Clarkefield | 177.9 | 2008-08-09 – 2026-01-15 |
 | 230104A | Maribyrnong River at Sunbury | 406.7 | 2004-01-01 – 2026-02-22 |
 | 230107A | Konagaderra Creek at Konagaderra | 682.7 | 2004-01-01 – 2025-12-14 |
 | 230200 | Maribyrnong River at Keilor | 1305.4 | 1908-02-02 – 2026-02-21 |
@@ -61,8 +61,8 @@ Status after full pipeline run (2026-02-23), ERA5-Land fetched from 1950:
 
 | # | Station | Name | Streamflow | Flow days | ERA5-Land | ERA5 days |
 |---|---------|------|-----------|----------:|-----------|----------:|
-|  1 | 230100A | Maribyrnong River at Darraweit      | 2004-01-01 – 2025-12-29 |  5,487 | 2004-01-01 – 2025-12-29 |  5,487 |
-|  2 | 230211A | Maribyrnong River at Clarkefield    | 2008-08-09 – 2026-01-15 |  4,618 | 2008-08-09 – 2026-01-15 |  4,618 |
+|  1 | 230100A | Deep Creek at Darraweit Guim        | 2004-01-01 – 2025-12-29 |  5,487 | 2004-01-01 – 2025-12-29 |  5,487 |
+|  2 | 230211A | Bolinda Creek at Clarkefield        | 2008-08-09 – 2026-01-15 |  4,618 | 2008-08-09 – 2026-01-15 |  4,618 |
 |  3 | 230104A | Maribyrnong River at Sunbury        | 2004-01-01 – 2026-02-22 |  7,558 | 2004-01-01 – 2026-02-15 |  7,551 |
 |  4 | 230107A | Konagaderra Creek at Konagaderra    | 2004-01-01 – 2025-12-14 |  4,272 | 2004-01-01 – 2025-12-14 |  4,272 |
 |  5 | 230200  | Maribyrnong River at Keilor         | 1908-02-02 – 2026-02-21 | 36,484 | 1950-01-02 – 2026-02-15 | 27,804 |

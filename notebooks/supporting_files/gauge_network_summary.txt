@@ -1,0 +1,221 @@
+================================================================================
+ MARIBYRNONG CARAVAN DATASET — GAUGE NETWORK SUMMARY
+ ausvic extension | 11 gauges | updated Feb 2026
+================================================================================
+
+Caravan submission: https://github.com/kratzert/Caravan/issues/51
+Zenodo DOI:         https://doi.org/10.5281/zenodo.18736844
+Streamflow units:   mm/day (converted from ML/day ÷ catchment area km²)
+Catchment areas:    HydroATLAS UP_AREA (GEE polygon intersection method),
+                    except Keilor (230200) which uses the official Victorian
+                    Water figure of 1305.4 km² (586 gaugings 1908–2025).
+
+3 stations excluded — already present in Caravan via CAMELS AUS v2
+(Zenodo 13350616, checked Feb 2026):
+  230210  Jacksons Creek at Bullengarook  (CAMELS period 1968–2022)
+  230205  Deep Creek at Bulla             (CAMELS period 1955–2022)
+  230209  Barringo Creek at Barringo      (CAMELS period 1966–2020)
+
+1 station excluded — agency duplicate (Feb 2026):
+  230104A  Jacksons Creek at Sunbury Road, Sunbury
+           Co-located with Hydstra gauge 230202 (same physical gauge, ~10 m
+           separation). 230104A is the Melbourne Water agency ID; 230202 is
+           the Victorian Water / Hydstra ID. 230202 kept: record from 1960
+           vs 1996 (36-year longer record).
+           Source: Oct 2022 post-event flood analysis named it "Jacksons
+           Creek at Sunbury Road" — confirming it is NOT on the mainstem.
+
+================================================================================
+ MAINSTEM & DEEP CREEK — Melbourne Water API (api.melbournewater.com.au)
+================================================================================
+
+1. ausvic_230100 | Deep Creek at Darraweit Guim
+   Station ID  : 230100A
+   Lat / Lon   : -37.4103, 144.9023
+   Area        : 682.7 km²
+   Flow from   : 1996-01-01
+   Role        : Upper Deep Creek; dominant contributor to Maribyrnong flood
+                 peaks (Oct 2022: 280 m³/s, near 1% AEP). Deep Creek is a
+                 major tributary — NOT the Maribyrnong mainstem.
+   Name source : Jacobs/Melbourne Water Oct 2022 post-event flood analysis.
+                 Previously misnamed "Maribyrnong River at Darraweit".
+
+2. ausvic_230102 | Deep Creek at Bulla  *** ADDED Feb 2026 ***
+   Station ID  : 230102A
+   Lat / Lon   : -37.6314, 144.8010
+   Area        : 876.4 km² (HydroATLAS UP_AREA, polygon intersection)
+   Flow from   : 2004-01-01
+   Role        : Junction gauge capturing combined Deep Creek + Emu Creek
+                 flows before entering the Maribyrnong mainstem. Closes the
+                 water balance gap between Darraweit Guim (682.7 km²) and
+                 Keilor (1305.4 km²). Oct 2022 peak: 98 m³/s.
+   Source      : Identified from Oct 2022 post-event flood analysis.
+                 CAMELS AUS v2 check Feb 2026: not present — safe to include.
+                 MW API has flow from 2004; pre-2004 level data from 1996.
+
+3. ausvic_230211 | Bolinda Creek at Clarkefield
+   Station ID  : 230211A
+   Lat / Lon   : -37.4662, 144.7440
+   Area        : 177.9 km²
+   Flow from   : 2008-01-01
+   Role        : Upper Bolinda Creek tributary. Despite being 45% smaller than
+                 Jacksons Creek, provided similar flood flow in Oct 2022 due
+                 to Emu Creek arm and high antecedent wetness.
+   Name source : Jacobs/Melbourne Water Oct 2022 post-event flood analysis.
+                 Previously misnamed "Maribyrnong River at Clarkefield".
+
+4. ausvic_230107 | Konagaderra Creek at Konagaderra
+   Station ID  : 230107A
+   Lat / Lon   : -37.5285, 144.8560
+   Area        : 682.7 km²
+   Flow from   : 1996-01-01
+   Role        : Konagaderra Creek tributary entering mid Maribyrnong.
+
+5. ausvic_230237 | Maribyrnong River at Keilor North  *** ADDED Feb 2026 ***
+   Station ID  : 230237A
+   Lat / Lon   : -37.6778, 144.8050
+   Area        : 1413.8 km² (HydroATLAS — Level-12 resolution snaps Keilor North,
+                 Keilor, and Chifley Drive to the same outlet basin; true catchment
+                 is likely 900–1200 km² but no finer estimate is available)
+   Flow from   : 2008-01-01
+   Role        : Junction gauge downstream of Jacksons Creek confluence,
+                 in Sydenham Park. Captures combined mainstem + Jacksons
+                 Creek flows. Sits between Sunbury (406.7 km²) and Keilor
+                 (1305.4 km²). Used in official MW flood warning operations.
+   Source      : Station number confirmed from Maribyrnong Municipal Storm
+                 and Flood Emergency Plan v4.0 (Oct 2018), Table A4.
+                 CAMELS AUS v2 check Feb 2026: not present — safe to include.
+
+6. ausvic_230106 | Maribyrnong River at Chifley Drive
+   Station ID  : 230106A
+   Lat / Lon   : -37.7659, 144.8950
+   Area        : 1413.6 km²
+   Flow from   : 1996-01-01
+   Role        : Lower mainstem, tidal zone. Flow only reliable above ~1 m
+                 water level (>16,520 ML/day). Only 263 valid flow days on
+                 record. 3rd highest stage on record in Oct 2022 (4.22 m).
+                 Highest recorded: 4.50 m (September 1906).
+   AEP levels  : Minor 1.70 m (20% AEP), Major 2.90 m, 1% AEP = 4.40 m
+                 (source: Maribyrnong Municipal Storm and Flood Emergency
+                 Plan v4.0, Oct 2018, Appendix C1).
+
+================================================================================
+ MAINSTEM — Victorian Water / Hydstra API (data.water.vic.gov.au)
+================================================================================
+
+7. ausvic_230200 | Maribyrnong River at Keilor
+   Station ID  : 230200
+   Lat / Lon   : -37.727706, 144.836476
+   Area        : 1305.4 km² (official Victorian Water figure)
+   Flow from   : 1907-05-20
+   Role        : Primary long-record mainstem gauge. Artificial crump weir;
+                 586 gaugings 1908–2025. Longest record in the network.
+                 Oct 2022: 768 m³/s (highest since 1974, just above 2% AEP).
+   Note        : BOM also assigns this station ID 230105A (same physical gauge,
+                 different agency system). We use the Hydstra/DELWP number.
+
+================================================================================
+ TRIBUTARIES — Victorian Water / Hydstra API (data.water.vic.gov.au)
+================================================================================
+
+ Jacksons Creek system (joins Maribyrnong near Sunbury)
+
+8. ausvic_230206 | Jackson Creek at Gisborne
+   Station ID  : 230206
+   Lat / Lon   : -37.475370, 144.572443
+   Area        : 154.1 km²
+   Flow from   : 1960-01-01
+   Role        : Jacksons Creek mid-upper reach at Gisborne township.
+
+9. ausvic_230202 | Jackson Creek at Sunbury
+   Station ID  : 230202
+   Lat / Lon   : -37.583217, 144.742036
+   Area        : 406.7 km²
+   Flow from   : 1960-01-01
+   Role        : Jacksons Creek near confluence with Maribyrnong at Sunbury.
+                 Second-largest tributary contribution in Oct 2022.
+   Note        : Co-located Melbourne Water gauge 230104A excluded (same
+                 physical gauge, shorter record 1996 vs 1960).
+
+ Mt Macedon / upper headwaters
+
+10. ausvic_230213 | Turritable Creek at Mount Macedon
+    Station ID  : 230213
+    Lat / Lon   : -37.418905, 144.584810
+    Area        : 109.9 km²
+    Flow from   : 1980-01-01
+    Role        : Turritable Creek headwater on the slopes of Mt Macedon.
+
+11. ausvic_230227 | Main Creek at Kerrie
+    Station ID  : 230227
+    Lat / Lon   : -37.396121, 144.660395
+    Area        : 177.9 km²
+    Flow from   : 1990-01-01
+    Role        : Main Creek tributary of the upper Maribyrnong at Kerrie.
+
+================================================================================
+ QUICK REFERENCE TABLE
+================================================================================
+
+ #  gauge_id          Station   Name                              Area km²  From
+ 1  ausvic_230100     230100A   Deep Creek at Darraweit Guim       682.7   1996
+ 2  ausvic_230102     230102A   Deep Creek at Bulla                876.4   2004
+ 3  ausvic_230211     230211A   Bolinda Creek at Clarkefield        177.9   2008
+ 4  ausvic_230107     230107A   Konagaderra Creek at Konagaderra    682.7   1996
+ 5  ausvic_230237 †   230237A   Maribyrnong River at Keilor North 1413.8   2008
+ 6  ausvic_230106     230106A   Maribyrnong River at Chifley Drive 1413.6   1996
+ 7  ausvic_230200     230200    Maribyrnong River at Keilor        1305.4   1907
+ 8  ausvic_230206     230206    Jackson Creek at Gisborne           154.1   1960
+ 9  ausvic_230202     230202    Jackson Creek at Sunbury            406.7   1960
+10  ausvic_230213     230213    Turritable Creek at Mount Macedon   109.9   1980
+11  ausvic_230227     230227    Main Creek at Kerrie                177.9   1990
+
+† area_km2 for ausvic_230237: HydroATLAS Level-12 snaps Keilor North, Keilor, and
+  Chifley Drive to the same outlet basin — all three return 1413.8 km². True
+  catchment is smaller (likely 900–1200 km²) but no finer estimate is available.
+
+================================================================================
+ DATA SOURCES
+================================================================================
+
+Melbourne Water API  : api.melbournewater.com.au/rainfall-river-level
+                       Gauges: 230100A, 230102A, 230106A, 230107A,
+                               230211A, 230237A
+                       License: Creative Commons Attribution 4.0
+
+Victorian Water WMIS : data.water.vic.gov.au (Hydstra API)
+                       Gauges: 230200, 230202, 230206, 230213, 230227
+                       License: Creative Commons Attribution 4.0
+
+ERA5-Land forcing    : ECMWF/ERA5_LAND/DAILY_AGGR via Google Earth Engine
+                       Coverage: 1950-01-02 to present (39 variables)
+                       License: Copernicus C3S
+
+HydroATLAS basin     : BasinATLAS Level-12 via Google Earth Engine
+attributes             (polygon intersection + area-weighting method)
+                       License: Creative Commons Attribution 4.0
+
+================================================================================
+ SOURCES USED TO BUILD / VERIFY THIS NETWORK
+================================================================================
+
+1. Jacobs / Melbourne Water (2023). Maribyrnong River Flood Event —
+   October 2022 Post-Event Flood Analysis. Final Report, 28 March 2023.
+   → Corrected gauge names for 230100A and 230211A
+   → Identified 230102A (Deep Creek at Bulla) as a significant gap
+   → Confirmed 230104A = "Jacksons Creek at Sunbury Road" (not mainstem;
+     co-located with Hydstra 230202 — excluded as agency duplicate)
+
+2. Maribyrnong City Council / Melbourne Water (2018). Maribyrnong Municipal
+   Storm and Flood Emergency Plan, Version 4.0, October 2018.
+   → Confirmed station number 230237A for "Keilor North" junction gauge
+   → Provided AEP flood level benchmarks for 230106A (Chifley Drive)
+
+3. Kratzert et al. (2023). Caravan — A global community dataset for
+   large-sample hydrology. Scientific Data, 10, 61.
+   https://doi.org/10.1038/s41597-023-01975-w
+
+4. CAMELS AUS v2 master table (Zenodo 13350616), checked Feb 2026.
+   → Confirmed 230102A and 230237A are NOT in Caravan via CAMELS AUS v2
+
+================================================================================
