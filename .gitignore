@@ -4,6 +4,9 @@ caravan_maribyrnong/
 # Local reference material — not part of the codebase
 code_to_leverage/
 
+# Archived scripts — no longer part of the active pipeline
+archive/
+
 # One-off build helper — regenerates the ausvic notebooks from code_to_leverage/
 _build_ausvic_notebooks.py
 
