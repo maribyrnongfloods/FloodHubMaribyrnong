@@ -57,7 +57,22 @@ Sanity order: 1278.1 < 1305.4 < 1385.0 ✓
 - `tests/test_pipeline.py`: renamed `test_all_10_config_gauges_are_valid` → `test_all_12_config_gauges_are_valid`
 - 125/125 tests pass
 
-**Remaining manual action (reviewer item 6)**
-- Re-run notebook 0a in GEE (already has correct MERIT Hydro Step 4) to regenerate `gauges_ausvic.json`
-- Download JSON from Drive, confirm ausvic_230237 = 1278.1 and ausvic_230106 = 1385.0
-- Use updated JSON for notebook 0b to regenerate catchment shapefiles
+**Completed (Feb 2026 — this session)**
+- Notebook 0a re-run in GEE, output verified: ausvic_230237=1278.1, ausvic_230106=1385.0, ausvic_230200=1305.4 ✓
+- KNOWN_AREAS fallback added: ausvic_230213=109.8 km² (HydroBASINS L12), ausvic_230227=177.8 km² (MERIT off-network) ✓
+- Before/after comparison cells added + headwater fallback cells + static catchment map ✓
+- Notebook 0a output validated: ordering check passes, all 12 gauges correct ✓
+- gauges_ausvic.json saved to Google Drive with all 12 correct areas ✓
+
+**Remaining manual action**
+- [ ] Run notebook 0b in Colab to regenerate catchment shapefiles using updated gauges_ausvic.json
+- [ ] Re-run archive pipeline (from archive/ dir) for all 12 gauges:
+    cd archive && python fetch_maribyrnong.py
+    python fetch_era5land.py     # delete era5land_hourly_cache_*.json for affected gauges first
+    python compute_attributes.py
+    python write_netcdf.py
+    python validate_submission.py
+    python -m pytest tests/ -q   # 125 tests must pass
+- [ ] Commit notebook 0a changes (git add notebooks/0a-derive_gauge_config_ausvic.ipynb)
+- [ ] Upload regenerated caravan_maribyrnong/ to Zenodo (new version)
+- [ ] Post updated DOI to GitHub issue kratzert/Caravan#51
