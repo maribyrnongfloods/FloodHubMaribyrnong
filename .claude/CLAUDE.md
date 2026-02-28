@@ -57,6 +57,7 @@ Chifley Drive (230106A) is tidal — only 263 valid flow days above the tidal th
 - FAO-56 Penman-Monteith PET computed per Caravan `pet.py`
 - Climate indices in `attributes_caravan_ausvic.csv` computed over 1981–2020 per Caravan standard
 - Catchment areas from HydroATLAS `UP_AREA`; Keilor = official VW figure 1305.4 km²; Keilor North + Chifley Drive = MERIT Hydro 90m (HydroBASINS Level-12 too coarse for these co-located gauges)
+- `attributes_hydroatlas_ausvic.csv` has **195 columns** (gauge_id + 194 BasinATLAS attrs). The official Caravan Part 1 notebook filters 295 → 194 by removing 11 HydroRIVER + 86 upstream (`_usu`/`_use`) properties. The "294" figure in older docs was wrong — it was the pre-filter count.
 - All data licensed CC-BY-4.0
 
 ## Workflow Orchestration

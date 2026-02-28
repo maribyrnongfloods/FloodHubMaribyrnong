@@ -59,7 +59,9 @@
       "WebFetch(domain:www.srw.com.au)",
       "WebFetch(domain:www.melbournewater.com.au)",
       "WebFetch(domain:services1.arcgis.com)",
-      "WebFetch(domain:melbournewater.maps.arcgis.com)"
+      "WebFetch(domain:melbournewater.maps.arcgis.com)",
+      "Bash(git rm:*)",
+      "WebFetch(domain:doi.org)"
     ]
   }
 }
