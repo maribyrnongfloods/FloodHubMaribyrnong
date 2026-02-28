@@ -1,0 +1,86 @@
+[
+  {
+    "gauge_id": "ausvic_230119",
+    "name": "Maribyrnong River at Lancefield",
+    "lat": -37.28609024,
+    "lon": 144.7777498,
+    "area_km2": 226.1
+  },
+  {
+    "gauge_id": "ausvic_230100",
+    "name": "Deep Creek at Darraweit Guim",
+    "lat": -37.41031306,
+    "lon": 144.9022845,
+    "area_km2": 481.5
+  },
+  {
+    "gauge_id": "ausvic_230102",
+    "name": "Deep Creek at Bulla",
+    "lat": -37.6314,
+    "lon": 144.801,
+    "area_km2": 857.5
+  },
+  {
+    "gauge_id": "ausvic_230211",
+    "name": "Bolinda Creek at Clarkefield",
+    "lat": -37.4662,
+    "lon": 144.744,
+    "area_km2": 94.9
+  },
+  {
+    "gauge_id": "ausvic_230107",
+    "name": "Konagaderra Creek at Konagaderra",
+    "lat": -37.5285,
+    "lon": 144.856,
+    "area_km2": 618.0
+  },
+  {
+    "gauge_id": "ausvic_230237",
+    "name": "Maribyrnong River at Keilor North",
+    "lat": -37.6778,
+    "lon": 144.805,
+    "area_km2": 1278.1
+  },
+  {
+    "gauge_id": "ausvic_230200",
+    "name": "Maribyrnong River at Keilor",
+    "lat": -37.72770609,
+    "lon": 144.8364761,
+    "area_km2": 1305.4
+  },
+  {
+    "gauge_id": "ausvic_230106",
+    "name": "Maribyrnong River at Chifley Drive",
+    "lat": -37.7659,
+    "lon": 144.895,
+    "area_km2": 1385.0
+  },
+  {
+    "gauge_id": "ausvic_230206",
+    "name": "Jackson Creek at Gisborne",
+    "lat": -37.47537048,
+    "lon": 144.5724432,
+    "area_km2": 92.3
+  },
+  {
+    "gauge_id": "ausvic_230202",
+    "name": "Jackson Creek at Sunbury",
+    "lat": -37.58321737,
+    "lon": 144.7420356,
+    "area_km2": 351.0
+  },
+  {
+    "gauge_id": "ausvic_230213",
+    "name": "Turritable Creek at Mount Macedon",
+    "lat": -37.41890497,
+    "lon": 144.5848096,
+    "area_km2": 109.8
+  },
+  {
+    "gauge_id": "ausvic_230227",
+    "name": "Main Creek at Kerrie",
+    "lat": -37.39612106,
+    "lon": 144.6603949,
+    "area_km2": 177.8
+  }
+]

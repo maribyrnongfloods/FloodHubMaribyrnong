@@ -14,6 +14,9 @@ _build_ausvic_notebooks.py
 era5land_cache_*.json
 silo_cache_*.csv
 
+# GEE ERA5-Land batch exports (downloaded from Google Drive, not committed)
+batch*.csv
+
 # Python
 __pycache__/
 *.py[cod]
