@@ -7,6 +7,9 @@ code_to_leverage/
 # Archived scripts — no longer part of the active pipeline
 archive/
 
+# Internal task tracking — not part of the codebase
+tasks/
+
 # One-off build helper — regenerates the ausvic notebooks from code_to_leverage/
 _build_ausvic_notebooks.py
 

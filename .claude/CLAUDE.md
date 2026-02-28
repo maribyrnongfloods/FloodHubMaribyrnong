@@ -11,10 +11,20 @@ the open community dataset used by Google Flood Hub to train its AI flood foreca
 
 ```
 notebooks/
-  0a-derive_gauge_config_ausvic.ipynb   — gauge network config + MERIT Hydro area lookup
-  0b-fetch_catchments_ausvic.ipynb      — catchment polygon derivation via HydroBASINS BFS
+  1-derive_gauge_config_ausvic.ipynb    — gauge network config + MERIT Hydro area lookup
+  2-fetch_catchments_ausvic.ipynb       — catchment polygon derivation via HydroBASINS BFS
+  3-fetch_streamflow_ausvic.ipynb       — fetch daily streamflow from MW + VW APIs
+  4-Caravan_part1_Earth_Engine.ipynb    — GEE: ERA5-Land export + HydroATLAS attributes
+  5-Caravan_part2_local_postprocessing.ipynb — ERA5 post-processing + save Caravan outputs
+  caravan_utils.py                      — aggregation and unit conversion utilities
+  pet.py                                — FAO-56 Penman-Monteith PET
 
-archive/                                — all original .py pipeline scripts (gitignored)
+caravan_maribyrnong_gee/
+  gauges_ausvic.json                    — gauge config (id, name, lat, lon, area_km2)
+  attributes/attributes.csv             — HydroATLAS attributes from GEE
+  shapefiles/ausvic_basin_shapes.*      — catchment polygons (WGS84)
+  batch*.csv                            — ERA5-Land hourly GEE exports (gitignored, ~2.9 GB)
+
 tasks/                                  — todo.md, lessons.md (gitignored)
 ```
 
