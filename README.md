@@ -29,9 +29,35 @@ Contributing 12 Maribyrnong River gauging stations to [Caravan](https://github.c
 
 | Notebook | Purpose |
 |----------|---------|
-| `notebooks/0a-derive_gauge_config_ausvic.ipynb` | Gauge network config and MERIT Hydro area lookup (run in Colab) |
-| `notebooks/0b-fetch_catchments_ausvic.ipynb` | Catchment polygon derivation via HydroBASINS BFS (run in Colab) |
-| `notebooks/1-Caravan_part1_Earth_Engine_Lee.ipynb` | ERA5-Land forcing and HydroATLAS attributes via GEE (run in Colab) |
+| `notebooks/1-derive_gauge_config_ausvic.ipynb` | Gauge network config and MERIT Hydro area lookup |
+| `notebooks/2-fetch_catchments_ausvic.ipynb` | Catchment polygon derivation via HydroBASINS BFS |
+| `notebooks/3-fetch_streamflow_ausvic.ipynb` | Daily streamflow from Melbourne Water and Victorian Water APIs |
+| `notebooks/4-Caravan_part1_Earth_Engine.ipynb` | ERA5-Land forcing and HydroATLAS attributes via GEE (run in Colab) |
+| `notebooks/5-Caravan_part2_local_postprocessing.ipynb` | ERA5 post-processing, PET, climate indices, Caravan output files |
+
+## Notable flood events
+
+Top 10 flood dates identified from the streamflow record, ranked by the fraction of the
+gauge network simultaneously reporting high flows (≥ 3 gauges required).
+Cross-checked against the SES Maribyrnong Flood Study historic stage table.
+
+| Rank | Date | Gauges active | Peak gauge | Peak flow (mm/d) | SES reference |
+|------|------|:---:|---|---:|---|
+| 1 | 1993-09-15 | 5 | Jackson Ck at Gisborne (230206) | 65.50 | SES table: 3.83 m at Maribyrnong/Chifley |
+| 2 | 1983-10-16 | 4 | Jackson Ck at Gisborne (230206) | 51.67 | — |
+| 3 | 1971-11-08 | 3 | Jackson Ck at Gisborne (230206) | 30.84 | — |
+| 4 | 2022-10-14 | **12** | Maribyrnong at Keilor (230200) | 33.27 | SES/report: 4.22 m at Chifley (14 Oct 2022) |
+| 5 | 1990-07-18 | 5 | Jackson Ck at Gisborne (230206) | 24.71 | — |
+| 6 | 1963-07-14 | 3 | Jackson Ck at Sunbury (230202) | 13.85 | — |
+| 7 | 1978-08-08 | 4 | Maribyrnong at Keilor (230200) | 18.59 | — |
+| 8 | 1985-12-10 | 4 | Jackson Ck at Sunbury (230202) | 17.91 | — |
+| 9 | 1990-10-12 | 5 | Jackson Ck at Gisborne (230206) | 23.61 | — |
+| 10 | 1960-09-18 | 3 | Jackson Ck at Sunbury (230202) | 14.23 | — |
+
+**2022-10-14** is the only event in the full record where all 12 gauges simultaneously reported
+elevated flows, making it the most comprehensively documented flood in the dataset.
+Pre-Melbourne Water era events (before ~2003) are only captured by the Victorian Water gauges
+(Keilor 230200, Jackson Creek 230202/230206, tributaries 230213/230227).
 
 ## License
 
