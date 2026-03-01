@@ -37,6 +37,29 @@ Contributing 12 Maribyrnong River gauging stations to [Caravan](https://github.c
 
 ## Notable flood events
 
+### Official historical record — Lower Maribyrnong (mAHD at Maribyrnong/Chifley Drive)
+
+Source: Table 1, SES Maribyrnong Flood Study post-event analysis (2018), p. 11.
+
+| Rank | Year | Month | Peak height (mAHD) |
+|------|------|-------|-------------------:|
+| 1 | 1906 | Sept | 4.50 |
+| 2 | 1916 | Sept | 4.26 |
+| 3 | 2022 | Oct  | 4.22 |
+| 4 | 1974 | May  | 4.20 |
+| 5 | 1871 | Sept | 3.86 |
+| 6 | 1891 | July | 3.32 |
+| 7 | 1993 | Sept | 3.31 |
+| 8 | 1954 | Dec  | 2.98 |
+| 9 | 1924 | Aug  | 2.98 |
+| 10 | 1983 | Oct | 2.85 |
+| 11 | 1954 | Nov | 2.83 |
+
+Events before 1908 (1906, 1871, 1891, 1924) predate the Keilor gauge record and cannot be
+validated against the streamflow data in this dataset.
+
+### Streamflow-derived flood dates
+
 Top 10 flood dates identified from the streamflow record, ranked by the fraction of the
 gauge network simultaneously reporting high flows (≥ 3 gauges required).
 Cross-checked against the SES Maribyrnong Flood Study historic stage table.
