@@ -4,8 +4,7 @@ Source: https://github.com/kratzert/Caravan/wiki/Extending-Caravan-with-new-basi
 File:   code_to_leverage/instructions to add new basin
 
 These rules MUST be followed exactly when adding new basins to Caravan or when
-helping a user extend this dataset. `validate_submission.py` enforces them
-programmatically; unit tests in `tests/test_pipeline.py` verify each rule.
+helping a user extend this dataset. Unit tests in `tests/` verify each rule.
 
 ---
 
@@ -22,9 +21,6 @@ The field name MUST be different from any HydroATLAS / HydroBASINS field.
 Why: The GEE notebook joins user features with HydroATLAS. A name collision
 silently overwrites the basin ID with a HydroATLAS integer, producing wrong output.
 
-Enforced by: `validate_id_field_name()` in `validate_submission.py`.
-Tests: `TestIdFieldName` in `tests/test_pipeline.py`.
-
 ---
 
 ## Rule 2 — Gauge IDs must follow the Caravan two-part format
@@ -40,8 +36,7 @@ Every gauge ID must:
 Why: Reviewer requirement. `gauge_id.split('_')` must return exactly 2 elements
 to be compatible with Caravan's merging logic across all subdatasets.
 
-Enforced by: `validate_gauge_ids()` in `validate_submission.py`.
-Tests: `TestGaugeIdValidation` in `tests/test_pipeline.py`.
+Tests: `test_gauge_id_format` in `tests/test_csv_columns.py`.
 
 ---
 
@@ -58,11 +53,6 @@ Fields computed internally (e.g. `up_area_km2`) must be stripped before writing.
 Why: Caravan reviewer requirement (Feb 2026). Extra columns in the DBF are
 disallowed; the combined shapefile is for geometry only.
 
-Enforced by: `validate_shapefile_dbf_columns()` in `validate_submission.py`.
-Tests: `TestShapefileDbfColumns` in `tests/test_pipeline.py`.
-Code: `fetch_catchments.py` writes `gdf[["gauge_id", "geometry"]]` — the `["gauge_id"]`
-selection ensures only that column ends up in the DBF.
-
 ---
 
 ## Rule 4 — GeoJSON features must contain ONLY gauge_id
@@ -72,9 +62,6 @@ per feature: `{"gauge_id": "ausvic_XXXXXX"}`. No other properties.
 
 Why: Consistency with the shapefile. Internal fields must not leak into outputs.
 
-Enforced by: `validate_geojson_feature_properties()` in `validate_submission.py`.
-Tests: `TestGeoJsonFeatureProperties` in `tests/test_pipeline.py`.
-
 ---
 
 ## Rule 5 — ERA5-Land must use the HOURLY GEE collection
@@ -83,13 +70,10 @@ Tests: `TestGeoJsonFeatureProperties` in `tests/test_pipeline.py`.
 
 See `.claude/rules/era5land-processing.md` for full details.
 
-Tests: `TestEra5lNotebookFidelity::test_gee_collection_is_hourly`.
-
 ---
 
 ## Rule 6 — All required output files must exist before submission
 
-Run `python validate_submission.py` before every Zenodo upload.
 The following files must all be present under `caravan_maribyrnong/`:
 
 ```
@@ -104,8 +88,6 @@ shapefiles/ausvic/ausvic_basin_shapes.dbf
 shapefiles/ausvic/ausvic_basin_shapes.prj
 licenses/ausvic/license_ausvic.md
 ```
-
-Tests: `TestOutputFiles` in `tests/test_pipeline.py`.
 
 ---
 
@@ -142,7 +124,6 @@ The pipeline must follow the exact order in `.claude/rules/era5land-processing.m
 Run this before every Zenodo upload:
 
 ```bash
-python validate_submission.py         # all 6 checks must pass
 python -m pytest tests/ -q           # all tests must pass
 ```
 
@@ -166,5 +147,4 @@ Then verify manually:
 5. Run `python fetch_hydroatlas_polygon.py` — updates HydroATLAS attributes.
 6. Run `python fetch_catchments.py` — regenerates combined shapefile.
 7. Run `python write_netcdf.py` — regenerates all netCDF files.
-8. Run `python validate_submission.py` — all checks must pass.
-9. Run `python -m pytest tests/ -q` — all tests must pass.
+8. Run `python -m pytest tests/ -q` — all tests must pass.
