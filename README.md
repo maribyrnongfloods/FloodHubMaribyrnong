@@ -2,7 +2,7 @@
 
 Contributing 12 Maribyrnong River gauging stations to [Caravan](https://github.com/kratzert/Caravan), the open community dataset used by Google Flood Hub to train its AI flood forecasting model.
 
-- **Zenodo DOI:** https://doi.org/10.5281/zenodo.18736844
+- **Zenodo DOI:** https://doi.org/10.5281/zenodo.18821361
 - **Caravan submission:** https://github.com/kratzert/Caravan/issues/51
 - **Extending Caravan guide:** https://github.com/kratzert/Caravan/wiki/Extending-Caravan-with-new-basins
 
