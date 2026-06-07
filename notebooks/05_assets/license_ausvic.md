@@ -6,7 +6,7 @@ This sub-dataset is released under the **Creative Commons Attribution 4.0 Intern
 
 **Cite this extension as:**
 
-> Lanzafame, L. (2026). *Caravan-AUS-VIC: Maribyrnong River basin (10 gauges).* Zenodo. https://doi.org/&lt;INSERT DOI ON PUBLICATION&gt;
+> Lanzafame, L. (2026). *Caravan-AUS-VIC: Maribyrnong River basin (10 gauges).* Zenodo. https://doi.org/10.5281/zenodo.20580213
 
 ## Data sources and attributions
 
