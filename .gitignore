@@ -37,6 +37,8 @@ silo_cache_*.csv
 
 # Never commit PNGs — all generated figures
 *.png
+# ...except figures committed for the README
+!outlet_proof.png
 
 # Never commit netCDF data — generated timeseries
 *.nc
