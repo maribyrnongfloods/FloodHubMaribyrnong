@@ -1,0 +1,34 @@
+# Project dependencies for FloodHubMaribyrnong (Python 3.12)
+# Derived from actual imports in notebooks/ + caravan_utils.py + pet.py.
+# Local-run only; google.colab (used by the Earth Engine notebooks) is Colab-only
+# and intentionally not listed here.
+
+# Core scientific stack
+numpy>=2.0
+pandas
+xarray
+netCDF4
+numba
+
+# Geospatial
+geopandas
+pyogrio
+shapely
+pyproj
+
+# Catchment / network analysis
+networkx
+timezonefinder
+pytz
+
+# Plotting
+matplotlib
+
+# Earth Engine (Caravan part 1 — runs on Colab, listed for local use too)
+earthengine-api
+
+# Utilities
+tqdm
+
+# Notebook / kernel support for VS Code + Jupyter
+ipykernel
