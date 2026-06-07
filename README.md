@@ -53,8 +53,11 @@ The two largest Maribyrnong floods are clearly resolved in the data. At Keilor (
 
 ## Files
 
-```
-attributes/ausvic/          attributes_other
+- `attributes/ausvic/` — `attributes_other_ausvic.csv` (6 cols), `attributes_hydroatlas_ausvic.csv` (197), `attributes_caravan_ausvic.csv` (14 climate indices), `attributes_additional_ausvic.csv` (extension-specific)
+- `timeseries/csv/ausvic/` — `<gauge_id>.csv` (forcings + streamflow)
+- `timeseries/netcdf/ausvic/` — `<gauge_id>.nc`
+- `shapefiles/ausvic/` — `ausvic_basin_shapes.{shp,shx,dbf,prj,cpg}`
+- `licenses/ausvic/` — `license_ausvic.md` (CC-BY-4.0 + sources + references)
 
 ## License & citation
 
