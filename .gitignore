@@ -61,6 +61,10 @@ ausvic_caravan_bundle/*
 !ausvic_caravan_bundle/README.md
 !ausvic_caravan_bundle/LICENSE.txt
 
+# Pipeline stage output dirs — not committed
+03_streamflow/
+04_caravan_bundle/
+
 # pytest cache
 .pytest_cache/
 
