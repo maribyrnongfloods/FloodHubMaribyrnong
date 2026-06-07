@@ -2,6 +2,9 @@
 caravan_maribyrnong/
 caravan_maribyrnong_zenodo.zip
 
+# Never commit zip archives — all generated/bundled
+*.zip
+
 # Local data — not committed
 data/
 
