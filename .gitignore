@@ -21,6 +21,23 @@ _build_ausvic_notebooks.py
 era5land_cache_*.json
 silo_cache_*.csv
 
+# Never commit CSVs — all CSV data is generated/downloaded
+*.csv
+
+# Never commit shapefile / GIS vector outputs — all generated
+*.cpg
+*.dbf
+*.geojson
+*.prj
+*.shp
+*.shx
+
+# Never commit PNGs — all generated figures
+*.png
+
+# Never commit netCDF data — generated timeseries
+*.nc
+
 # GEE ERA5-Land batch exports (downloaded from Google Drive, not committed)
 batch*.csv
 
