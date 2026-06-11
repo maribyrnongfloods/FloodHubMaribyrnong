@@ -42,7 +42,7 @@ The archive unpacks to the standard Caravan sub-dataset layout and can be merged
 CHANGES IN THIS VERSION
 
 - Restored the Keilor (230200) 1908–1949 streamflow record (~10,200 valid days, including the September 1916 flood — the second-largest on record) as streamflow-only rows with empty forcing columns, per the Caravan convention for pre-reanalysis records.
-- attributes_other_ausvic.csv now uses the standard Caravan column order (gauge_id, gauge_name, country, gauge_lat, gauge_lon, area) and the ISO 3166-1 alpha-2 country code (AU).
+- attributes_other_ausvic.csv now uses the standard Caravan column order (gauge_id, gauge_name, country, gauge_lat, gauge_lon, area) with the full country name (Australia) for consistency with the rest of Caravan.
 - attributes_additional_ausvic.csv is written as plain UTF-8 (the UTF-8 BOM in the previous version, which broke default pandas gauge_id keying, is removed).
 - The trailing partial ERA5-Land day (an artefact of the GEE export ending mid-day) is now trimmed.
 - Documented two gauge caveats in the additional-attributes table: the Keilor North (230237) Oct-2022 high-stage rating underestimate, and the regulated status of Gisborne (230206), which sits downstream of Rosslynne Reservoir (built 1971-74) — the reservoir absorbed the May-1974 flood entirely at that gauge and suppresses runoff during refill years.
